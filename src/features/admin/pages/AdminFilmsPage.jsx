@@ -12,8 +12,11 @@ import {
   CheckCircle2,
   X,
   ExternalLink,
+  Upload,
+  Loader2,
 } from 'lucide-react';
 import { movieService } from '../services/movieService';
+import { uploadImageToCloudinary } from '../../../lib/cloudinary';
 
 const DEFAULT_AUDITORIUMS = [
   'Auditorium 01 — The Sovereign Soundstage',
@@ -32,6 +35,10 @@ const DEFAULT_FORMATS = [
 export default function AdminFilmsPage() {
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Cloudinary Upload State
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -120,14 +127,58 @@ export default function AdminFilmsPage() {
     }
   };
 
-  const handleImageFileChange = (e) => {
+  const handleImageFileChange = async (e) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+
+    // If Cloudinary cloud name is configured, upload directly to Cloudinary CDN
+    if (cloudName && cloudName.trim()) {
+      try {
+        setUploadingImage(true);
+        setUploadProgress(15);
+
+        const result = await uploadImageToCloudinary(file, {
+          onProgress: (percent) => setUploadProgress(percent),
+        });
+
+        setFormData((prev) => ({ ...prev, backdrop: result.url }));
+        setNotification({
+          type: 'success',
+          message: 'Poster uploaded to Cloudinary CDN! Image URL ready.',
+        });
+        setTimeout(() => setNotification(null), 4000);
+      } catch (err) {
+        console.error('Cloudinary upload error:', err);
+        setNotification({
+          type: 'error',
+          message: `Cloudinary upload failed: ${err.message}`,
+        });
+
+        // Local fallback for preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFormData((prev) => ({ ...prev, backdrop: reader.result }));
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        setUploadingImage(false);
+        setUploadProgress(0);
+      }
+    } else {
+      // Cloud name not yet configured: provide local preview and notification
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData((prev) => ({ ...prev, backdrop: reader.result }));
       };
       reader.readAsDataURL(file);
+
+      setNotification({
+        type: 'warning',
+        message: 'Cloudinary Cloud Name is not configured in .env yet. Using local preview.',
+      });
+      setTimeout(() => setNotification(null), 5000);
     }
   };
 
@@ -537,28 +588,54 @@ export default function AdminFilmsPage() {
                 </div>
               </div>
 
-              {/* Row 4: Backdrop Image (URL or Local File) */}
+              {/* Row 4: Backdrop Image (Cloudinary CDN or Direct URL) */}
               <div className="admin-field-group">
-                <label className="admin-label">Backdrop Poster / Photograph</label>
+                <label className="admin-label">
+                  Backdrop Poster / Photograph (Cloudinary CDN)
+                </label>
                 <div className="admin-image-input-wrap">
                   <input
                     type="text"
                     name="backdrop"
                     value={formData.backdrop}
                     onChange={handleChange}
-                    placeholder="/images/luxury_cinema_interior.jpg or https://image-url..."
+                    placeholder="https://res.cloudinary.com/... or /images/..."
                     className="admin-input"
                   />
-                  <label className="admin-file-upload-btn">
-                    <span>Upload Image</span>
+                  <label
+                    className={`admin-file-upload-btn ${uploadingImage ? 'is-uploading' : ''}`}
+                    title={uploadingImage ? 'Uploading...' : 'Upload Image to Cloudinary'}
+                  >
+                    {uploadingImage ? (
+                      <>
+                        <Loader2 size={14} className="spin-loader" />
+                        <span>Uploading {uploadProgress}%</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={14} />
+                        <span>Upload Poster</span>
+                      </>
+                    )}
                     <input
                       type="file"
                       accept="image/*"
+                      disabled={uploadingImage}
                       onChange={handleImageFileChange}
                       style={{ display: 'none' }}
                     />
                   </label>
                 </div>
+
+                {uploadingImage && (
+                  <div className="cloudinary-progress-bar">
+                    <div
+                      className="cloudinary-progress-fill"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                )}
+
                 {/* Live Preview */}
                 {formData.backdrop && (
                   <div className="admin-image-preview">
@@ -567,7 +644,12 @@ export default function AdminFilmsPage() {
                       alt="Preview"
                       className="preview-img"
                     />
-                    <span className="preview-label">Live Visual Preview</span>
+                    <div className="preview-meta">
+                      <span className="preview-label">Live Visual Preview</span>
+                      {formData.backdrop.includes('cloudinary.com') && (
+                        <span className="cloudinary-badge">Cloudinary CDN Synced</span>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

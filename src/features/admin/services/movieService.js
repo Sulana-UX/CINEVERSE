@@ -15,7 +15,14 @@ function getLocalMovies() {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        return parsed.map((m) => ({
+          ...m,
+          showtimes: Array.isArray(m.showtimes) && m.showtimes.length > 0
+            ? m.showtimes
+            : (typeof m.showtimes === 'string' && m.showtimes.trim()
+                ? m.showtimes.split(',').map((t) => t.trim()).filter(Boolean)
+                : ['14:30', '17:45', '20:30']),
+        }));
       }
     }
   } catch {

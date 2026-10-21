@@ -46,15 +46,25 @@ export default function BookingPage() {
       const loadedMovies = data && data.length > 0 ? data : LUXURY_MOVIES;
       setMoviesList(loadedMovies);
 
+      let chosenMovie = loadedMovies[0];
       const movieIdParam = searchParams.get('movie');
       if (movieIdParam) {
         const found = loadedMovies.find((m) => String(m.id) === String(movieIdParam));
         if (found) {
-          setActiveMovie(found);
-          return;
+          chosenMovie = found;
         }
       }
-      setActiveMovie(loadedMovies[0]);
+      setActiveMovie(chosenMovie);
+
+      // Sync activeTime with the chosen movie's configured showtimes
+      const times = Array.isArray(chosenMovie.showtimes) && chosenMovie.showtimes.length > 0
+        ? chosenMovie.showtimes
+        : (typeof chosenMovie.showtimes === 'string' && chosenMovie.showtimes.trim()
+            ? chosenMovie.showtimes.split(',').map((s) => s.trim()).filter(Boolean)
+            : SHOWTIMES);
+      if (times.length > 0) {
+        setActiveTime((prev) => (times.includes(prev) ? prev : times[0]));
+      }
     }
     loadRepertory();
     return () => {
@@ -70,9 +80,17 @@ export default function BookingPage() {
         const parsed = JSON.parse(savedPending);
         if (parsed.movieId && moviesList.length > 0) {
           const matchMovie = moviesList.find((m) => String(m.id) === String(parsed.movieId));
-          if (matchMovie) setActiveMovie(matchMovie);
+          if (matchMovie) {
+            setActiveMovie(matchMovie);
+            const times = Array.isArray(matchMovie.showtimes) && matchMovie.showtimes.length > 0
+              ? matchMovie.showtimes
+              : SHOWTIMES;
+            if (times.length > 0 && parsed.time && times.includes(parsed.time)) {
+              setActiveTime(parsed.time);
+            }
+          }
         }
-        if (parsed.time) setActiveTime(parsed.time);
+        if (parsed.time && !parsed.movieId) setActiveTime(parsed.time);
         if (parsed.addons) setSelectedAddons(parsed.addons);
         if (Array.isArray(parsed.seats) && parsed.seats.length > 0) {
           setSelectedSeats(parsed.seats);
@@ -121,6 +139,15 @@ export default function BookingPage() {
   const handleSelectMovie = (movie) => {
     setActiveMovie(movie);
     setSelectedSeats([]);
+
+    const movieTimes = Array.isArray(movie.showtimes) && movie.showtimes.length > 0
+      ? movie.showtimes
+      : (typeof movie.showtimes === 'string' && movie.showtimes.trim()
+          ? movie.showtimes.split(',').map((s) => s.trim()).filter(Boolean)
+          : SHOWTIMES);
+    if (movieTimes.length > 0) {
+      setActiveTime((prev) => (movieTimes.includes(prev) ? prev : movieTimes[0]));
+    }
   };
 
   // Date switch handler

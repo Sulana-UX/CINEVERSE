@@ -11,6 +11,12 @@ export default function BookingHeader({
   onSelectTime,
   movies = LUXURY_MOVIES,
 }) {
+  const availableTimes = Array.isArray(activeMovie?.showtimes) && activeMovie.showtimes.length > 0
+    ? activeMovie.showtimes
+    : (typeof activeMovie?.showtimes === 'string' && activeMovie.showtimes.trim()
+        ? activeMovie.showtimes.split(',').map((s) => s.trim()).filter(Boolean)
+        : SHOWTIMES);
+
   return (
     <div className="booking-header-section">
       {/* Movie Selector Strip */}
@@ -76,14 +82,14 @@ export default function BookingHeader({
           </div>
         </div>
 
-        {/* Time Selector */}
+        {/* Dynamic Movie Time Selector */}
         <div className="schedule-group">
           <span className="schedule-label">
             <Clock size={14} />
-            <span>Select Showtime</span>
+            <span>Select Showtime ({availableTimes.length} Screenings)</span>
           </span>
           <div className="time-pills-row">
-            {SHOWTIMES.map((time) => (
+            {availableTimes.map((time) => (
               <button
                 key={time}
                 type="button"
@@ -91,7 +97,7 @@ export default function BookingHeader({
                 className={`time-pill ${activeTime === time ? 'active' : ''}`}
               >
                 <span className="time-text">{time}</span>
-                <span className="time-sub">PRIME</span>
+                <span className="time-sub">70MM</span>
               </button>
             ))}
           </div>

@@ -13,6 +13,7 @@ export const LUXURY_MOVIES = [
     auditorium: 'Auditorium 01 — The Sovereign Soundstage',
     tagline: 'Long live the fighters.',
     backdrop: '/images/luxury_cinema_interior.jpg',
+    showtimes: ['14:30', '17:45', '20:30', '23:00'],
     description:
       'Paul Atreides unites with Chani and the Fremen while seeking revenge against the conspirators who destroyed his family, facing a choice between love and the fate of the universe.',
   },
@@ -26,6 +27,7 @@ export const LUXURY_MOVIES = [
     auditorium: 'Auditorium 02 — The Director’s Loge',
     tagline: 'The world forever changes.',
     backdrop: '/images/luxury_cinema_details.jpg',
+    showtimes: ['13:30', '17:45', '21:15'],
     description:
       'The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb, rendered with unparalleled cinematic fidelity.',
   },
@@ -39,6 +41,7 @@ export const LUXURY_MOVIES = [
     auditorium: 'Auditorium 03 — The Quantum Chamber',
     tagline: 'Mankind was born on Earth. It was never meant to die here.',
     backdrop: '/images/luxury_cinema_interior.jpg',
+    showtimes: ['14:30', '18:00', '21:15'],
     description:
       'A team of explorers travels through a wormhole in space in an attempt to ensure humanity’s survival, accompanied by Hans Zimmer’s legendary score in uncompressed acoustics.',
   },

@@ -14,6 +14,7 @@ import {
   Upload,
   Loader2,
   RotateCcw,
+  Check,
 } from 'lucide-react';
 import { movieService } from '../services/movieService';
 import { adminDataService } from '../services/adminDataService';
@@ -41,6 +42,19 @@ const DEFAULT_FORMATS = [
   '35MM RESTORED ARCHIVAL PRINT',
 ];
 
+const PRESET_SHOWTIMES = [
+  '11:00',
+  '13:30',
+  '14:30',
+  '16:00',
+  '17:45',
+  '19:15',
+  '20:30',
+  '21:15',
+  '22:30',
+  '23:00',
+];
+
 export default function AdminFilmsPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -62,6 +76,10 @@ export default function AdminFilmsPage() {
   const [editingMovieId, setEditingMovieId] = useState(null);
   const [notification, setNotification] = useState(null);
 
+  // Showtimes Checkbox State
+  const [availableShowtimes, setAvailableShowtimes] = useState(PRESET_SHOWTIMES);
+  const [customTimeInput, setCustomTimeInput] = useState('');
+
   // Form State
   const [formData, setFormData] = useState({
     title: '',
@@ -73,7 +91,7 @@ export default function AdminFilmsPage() {
     tagline: '',
     description: '',
     backdrop: '/images/luxury_cinema_interior.jpg',
-    showtimes: '14:30, 18:00, 21:15',
+    showtimes: ['14:30', '17:45', '20:30'],
     status: 'Now Showing',
   });
 
@@ -115,6 +133,8 @@ export default function AdminFilmsPage() {
   const handleOpenAddModal = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setEditingMovieId(null);
+    setAvailableShowtimes(PRESET_SHOWTIMES);
+    setCustomTimeInput('');
     setFormData({
       title: '',
       format: DEFAULT_FORMATS[0],
@@ -125,7 +145,7 @@ export default function AdminFilmsPage() {
       tagline: '',
       description: '',
       backdrop: '/images/luxury_cinema_interior.jpg',
-      showtimes: '14:30, 18:00, 21:15',
+      showtimes: ['14:30', '17:45', '20:30'],
       status: 'Now Showing',
     });
     setFormErrors({});
@@ -134,6 +154,18 @@ export default function AdminFilmsPage() {
 
   const handleOpenEditModal = (movie) => {
     setEditingMovieId(movie.id);
+    setCustomTimeInput('');
+
+    const movieTimes = Array.isArray(movie.showtimes)
+      ? movie.showtimes
+      : (typeof movie.showtimes === 'string'
+          ? movie.showtimes.split(',').map((t) => t.trim()).filter(Boolean)
+          : ['14:30', '17:45', '20:30']);
+
+    // Merge any custom times present in this film that aren't in preset
+    const mergedTimes = Array.from(new Set([...PRESET_SHOWTIMES, ...movieTimes])).sort();
+    setAvailableShowtimes(mergedTimes);
+
     setFormData({
       title: movie.title,
       format: movie.format,
@@ -144,7 +176,7 @@ export default function AdminFilmsPage() {
       tagline: movie.tagline || '',
       description: movie.description || '',
       backdrop: movie.backdrop || '/images/luxury_cinema_interior.jpg',
-      showtimes: Array.isArray(movie.showtimes) ? movie.showtimes.join(', ') : movie.showtimes,
+      showtimes: movieTimes,
       status: movie.status || 'Now Showing',
     });
     setFormErrors({});
@@ -157,6 +189,53 @@ export default function AdminFilmsPage() {
     if (formErrors[name]) {
       setFormErrors((prev) => ({ ...prev, [name]: null }));
     }
+  };
+
+  const handleToggleShowtime = (time) => {
+    setFormData((prev) => {
+      const current = Array.isArray(prev.showtimes) ? prev.showtimes : [];
+      const exists = current.includes(time);
+      const updated = exists
+        ? current.filter((t) => t !== time)
+        : [...current, time].sort();
+      return { ...prev, showtimes: updated };
+    });
+    if (formErrors.showtimes) {
+      setFormErrors((prev) => ({ ...prev, showtimes: null }));
+    }
+  };
+
+  const handleSelectPresetShowtimes = (presetKey) => {
+    if (presetKey === 'prime') {
+      setFormData((prev) => ({ ...prev, showtimes: ['14:30', '17:45', '20:30', '21:15'] }));
+    } else if (presetKey === 'all') {
+      setFormData((prev) => ({ ...prev, showtimes: [...availableShowtimes] }));
+    } else if (presetKey === 'clear') {
+      setFormData((prev) => ({ ...prev, showtimes: [] }));
+    }
+    if (formErrors.showtimes) {
+      setFormErrors((prev) => ({ ...prev, showtimes: null }));
+    }
+  };
+
+  const handleAddCustomTime = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const cleanTime = customTimeInput.trim();
+    if (!cleanTime) return;
+
+    if (!availableShowtimes.includes(cleanTime)) {
+      setAvailableShowtimes((prev) => [...prev, cleanTime].sort());
+    }
+
+    setFormData((prev) => {
+      const current = Array.isArray(prev.showtimes) ? prev.showtimes : [];
+      if (!current.includes(cleanTime)) {
+        return { ...prev, showtimes: [...current, cleanTime].sort() };
+      }
+      return prev;
+    });
+
+    setCustomTimeInput('');
   };
 
   const handleImageFileChange = async (e) => {
@@ -218,19 +297,24 @@ export default function AdminFilmsPage() {
     if (!formData.runtime.trim()) errors.runtime = 'Runtime is required.';
     if (!formData.director.trim()) errors.director = 'Director is required.';
 
+    const showtimesArray = Array.isArray(formData.showtimes)
+      ? formData.showtimes
+      : (typeof formData.showtimes === 'string'
+          ? formData.showtimes.split(',').map((t) => t.trim()).filter(Boolean)
+          : []);
+
+    if (showtimesArray.length === 0) {
+      errors.showtimes = 'Please select at least one daily showtime for this presentation.';
+    }
+
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
 
-    const showtimesArray = formData.showtimes
-      .split(',')
-      .map((t) => t.trim())
-      .filter(Boolean);
-
     const moviePayload = {
       ...formData,
-      showtimes: showtimesArray.length > 0 ? showtimesArray : ['14:30', '18:00', '21:15'],
+      showtimes: showtimesArray,
     };
 
     if (editingMovieId) {
@@ -766,37 +850,118 @@ export default function AdminFilmsPage() {
                   )}
                 </div>
 
-                {/* Row 5: Tagline & Showtimes */}
-                <div className="form-row two-cols">
-                  <div className="admin-field-group">
-                    <label className="admin-label" htmlFor="film-tagline">
-                      Tagline
-                    </label>
-                    <input
-                      type="text"
-                      id="film-tagline"
-                      name="tagline"
-                      value={formData.tagline}
-                      onChange={handleChange}
-                      placeholder="e.g. Beyond the edge of existence."
-                      className="admin-input"
-                    />
+                {/* Row 5: Tagline */}
+                <div className="admin-field-group">
+                  <label className="admin-label" htmlFor="film-tagline">
+                    Tagline
+                  </label>
+                  <input
+                    type="text"
+                    id="film-tagline"
+                    name="tagline"
+                    value={formData.tagline}
+                    onChange={handleChange}
+                    placeholder="e.g. Beyond the edge of existence."
+                    className="admin-input"
+                  />
+                </div>
+
+                {/* Row 6: Daily Showtimes Checkboxes Suite */}
+                <div className="admin-field-group admin-showtimes-group">
+                  <div className="admin-showtimes-header">
+                    <div>
+                      <label className="admin-label" style={{ marginBottom: 0 }}>
+                        Daily Repertory Showtimes
+                      </label>
+                      <span className="admin-showtimes-count">
+                        ({(Array.isArray(formData.showtimes) ? formData.showtimes.length : 0)} Selected)
+                      </span>
+                    </div>
+
+                    {/* Quick action buttons */}
+                    <div className="showtime-quick-actions">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectPresetShowtimes('prime')}
+                        className="quick-preset-btn"
+                        title="Select common prime evening slots"
+                      >
+                        Prime Slots
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectPresetShowtimes('all')}
+                        className="quick-preset-btn"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectPresetShowtimes('clear')}
+                        className="quick-preset-btn clear-btn"
+                      >
+                        Clear
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="admin-field-group">
-                    <label className="admin-label" htmlFor="film-showtimes">
-                      Daily Showtimes (comma-separated)
-                    </label>
-                    <input
-                      type="text"
-                      id="film-showtimes"
-                      name="showtimes"
-                      value={formData.showtimes}
-                      onChange={handleChange}
-                      placeholder="14:30, 18:00, 21:15"
-                      className="admin-input"
-                    />
+                  {/* Checkbox Grid */}
+                  <div className="admin-showtimes-grid">
+                    {availableShowtimes.map((time) => {
+                      const isChecked = Array.isArray(formData.showtimes) && formData.showtimes.includes(time);
+                      return (
+                        <label
+                          key={time}
+                          className={`showtime-checkbox-pill ${isChecked ? 'is-selected' : ''}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => handleToggleShowtime(time)}
+                            className="showtime-hidden-checkbox"
+                          />
+                          <span className="showtime-custom-checkbox">
+                            {isChecked && <Check size={12} strokeWidth={3} />}
+                          </span>
+                          <span className="showtime-pill-text">{time}</span>
+                        </label>
+                      );
+                    })}
                   </div>
+
+                  {/* Add Custom Showtime Row */}
+                  <div className="admin-custom-time-row">
+                    <span className="custom-time-hint">Need a custom screening time?</span>
+                    <div className="custom-time-box">
+                      <input
+                        type="text"
+                        value={customTimeInput}
+                        onChange={(e) => setCustomTimeInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCustomTime();
+                          }
+                        }}
+                        placeholder="e.g. 18:30"
+                        className="admin-input custom-time-input"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddCustomTime}
+                        className="custom-time-add-btn"
+                      >
+                        <Plus size={13} />
+                        <span>Add Slot</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {formErrors.showtimes && (
+                    <span className="admin-field-error" style={{ marginTop: '0.5rem', color: '#ff6b6b', fontSize: '0.75rem', fontWeight: 600 }}>
+                      {formErrors.showtimes}
+                    </span>
+                  )}
                 </div>
 
                 {/* Row 6: Synopsis */}

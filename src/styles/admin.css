@@ -1974,3 +1974,189 @@
     flex-direction: column;
   }
 }
+
+/* --------------------------------------------------------------------------
+   15. Daily Showtimes Checkbox Suite
+   -------------------------------------------------------------------------- */
+.admin-showtimes-group {
+  background: #141414;
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  padding: 1.25rem 1.4rem;
+  margin-top: 0.35rem;
+  border-radius: 2px;
+}
+
+.admin-showtimes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.95rem;
+}
+
+.admin-showtimes-count {
+  font-family: var(--font-sans, sans-serif);
+  font-size: 0.75rem;
+  color: #D4AF37;
+  font-weight: 600;
+  margin-left: 0.45rem;
+}
+
+.showtime-quick-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.quick-preset-btn {
+  background: #1e1e1e;
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  color: #F3E5AB;
+  font-family: var(--font-sans, sans-serif);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 0.28rem 0.65rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-preset-btn:hover {
+  background: rgba(212, 175, 55, 0.22);
+  border-color: #D4AF37;
+  color: #FFFFFF;
+}
+
+.quick-preset-btn.clear-btn:hover {
+  background: rgba(139, 0, 0, 0.25);
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.admin-showtimes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 1.15rem;
+}
+
+.showtime-checkbox-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #181818;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0.55rem 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.showtime-checkbox-pill:hover {
+  background: #202020;
+  border-color: rgba(212, 175, 55, 0.45);
+}
+
+.showtime-checkbox-pill.is-selected {
+  background: rgba(212, 175, 55, 0.14);
+  border-color: #D4AF37;
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.18);
+}
+
+.showtime-hidden-checkbox {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.showtime-custom-checkbox {
+  width: 17px;
+  height: 17px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: #101010;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #070707;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.showtime-checkbox-pill.is-selected .showtime-custom-checkbox {
+  background: #D4AF37;
+  border-color: #D4AF37;
+  color: #070707;
+}
+
+.showtime-pill-text {
+  font-family: var(--font-sans, sans-serif);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #F5F2EB;
+  letter-spacing: 0.05em;
+}
+
+.showtime-checkbox-pill.is-selected .showtime-pill-text {
+  color: #F3E5AB;
+  font-weight: 700;
+}
+
+/* Custom Time Adder */
+.admin-custom-time-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-top: 0.85rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.09);
+}
+
+.custom-time-hint {
+  font-family: var(--font-sans, sans-serif);
+  font-size: 0.75rem;
+  color: rgba(245, 242, 235, 0.55);
+}
+
+.custom-time-box {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.custom-time-input {
+  width: 105px;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.82rem;
+  background: #171717;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #F5F2EB;
+}
+
+.custom-time-input:focus {
+  border-color: #D4AF37;
+}
+
+.custom-time-add-btn {
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  color: #F3E5AB;
+  font-family: var(--font-sans, sans-serif);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.custom-time-add-btn:hover {
+  background: #D4AF37;
+  color: #070707;
+}
+

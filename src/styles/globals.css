@@ -1,0 +1,8 @@
+/* CINEVERSE Global Stylesheet */
+@import './variables.css';
+@import './global.css';
+@import './navbar.css';
+@import './cinematic-intro.css';
+@import './sections.css';
+@import './auth.css';
+@import './booking.css';

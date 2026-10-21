@@ -1,0 +1,35 @@
+:root {
+  /* Color Palette - Restrained Luxury Cinema */
+  --color-deep-black: #080808;
+  --color-charcoal: #141414;
+  --color-charcoal-light: #1c1c1c;
+  --color-charcoal-card: #121212;
+  
+  --color-rich-red: #8B0000;
+  --color-ruby-red: #D71920;
+  --color-ruby-glow: rgba(215, 25, 32, 0.25);
+  
+  --color-metallic-gold: #D4AF37;
+  --color-champagne-gold: #F3E5AB;
+  --color-gold-muted: rgba(212, 175, 55, 0.35);
+  --color-gold-border: rgba(212, 175, 55, 0.2);
+  --color-gold-border-hover: rgba(212, 175, 55, 0.45);
+  --color-gold-subtle: rgba(212, 175, 55, 0.08);
+
+  --color-ivory: #F5F1E8;
+  --color-ivory-dim: rgba(245, 241, 232, 0.72);
+  --color-ivory-faint: rgba(245, 241, 232, 0.45);
+
+  /* Typography */
+  --font-serif: 'Cinzel', 'Cormorant Garamond', Georgia, serif;
+  --font-serif-editorial: 'Cormorant Garamond', Garamond, Georgia, serif;
+  --font-sans: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Transitions */
+  --transition-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-duration: 0.4s;
+  
+  /* Containers */
+  --container-max-width: 1280px;
+  --container-narrow-width: 880px;
+}

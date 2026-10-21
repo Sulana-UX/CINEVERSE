@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, ChevronRight, X, Ticket } from 'lucide-react';
+import { ShieldCheck, ChevronRight, X, Ticket, Lock, Sparkles } from 'lucide-react';
 
 export default function BookingSummaryBar({
   movie,
@@ -20,6 +20,7 @@ export default function BookingSummaryBar({
 
   const grandTotal = seatsTotal + addonsTotal;
   const hasSeats = selectedSeats.length > 0;
+  const isAuthenticated = Boolean(user);
 
   return (
     <div className="booking-summary-panel">
@@ -115,14 +116,19 @@ export default function BookingSummaryBar({
         </div>
       </div>
 
-      {/* Security note */}
-      <div className="summary-security-note">
-        <ShieldCheck size={14} className="gold-icon" />
-        <span>
-          {user
-            ? `Secured for Member: ${user.user_metadata?.full_name || user.email}`
-            : 'Encrypted Guest Concierge Checkout'}
-        </span>
+      {/* Security / Member note */}
+      <div className={`summary-security-note ${!isAuthenticated ? 'auth-required-note' : ''}`}>
+        {isAuthenticated ? (
+          <>
+            <ShieldCheck size={14} className="gold-icon" />
+            <span>Secured for Member: {user.user_metadata?.full_name || user.email}</span>
+          </>
+        ) : (
+          <>
+            <Lock size={14} className="gold-icon" />
+            <span>Patron sign-in required to confirm reservation</span>
+          </>
+        )}
       </div>
 
       {/* Action Button */}
@@ -130,10 +136,21 @@ export default function BookingSummaryBar({
         type="button"
         disabled={!hasSeats}
         onClick={onConfirmBooking}
-        className="summary-checkout-btn"
+        className={`summary-checkout-btn ${!isAuthenticated ? 'needs-auth' : ''}`}
       >
-        <span>CONFIRM PRIVATE RESERVATION</span>
-        <ChevronRight size={16} />
+        {!isAuthenticated ? (
+          <>
+            <Lock size={15} />
+            <span>SIGN IN TO RESERVE SEATS</span>
+            <ChevronRight size={16} />
+          </>
+        ) : (
+          <>
+            <Sparkles size={15} />
+            <span>CONFIRM PRIVATE RESERVATION</span>
+            <ChevronRight size={16} />
+          </>
+        )}
       </button>
     </div>
   );

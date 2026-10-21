@@ -1431,3 +1431,180 @@
     flex-direction: column;
   }
 }
+
+/* --------------------------------------------------------------------------
+   8. Mandatory Patron Authentication Notice & Modal
+   -------------------------------------------------------------------------- */
+.summary-security-note.auth-required-note {
+  color: var(--color-champagne-gold);
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  padding: 0.6rem 0.85rem;
+}
+
+.summary-checkout-btn.needs-auth {
+  background: linear-gradient(135deg, #2a220b 0%, #171308 100%);
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  color: var(--color-champagne-gold);
+}
+
+.summary-checkout-btn.needs-auth:hover:not(:disabled) {
+  background: linear-gradient(135deg, #F3E5AB 0%, #D4AF37 50%, #C49725 100%);
+  color: #050505;
+  box-shadow: 0 6px 25px rgba(212, 175, 55, 0.4);
+}
+
+.booking-auth-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: modalFadeIn 0.3s ease;
+}
+
+.booking-auth-modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 490px;
+  background: #0d0d0d;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(212, 175, 55, 0.12);
+  padding: 2.5rem 2.25rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.booking-auth-modal-close {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 0.35rem;
+  transition: color 0.2s ease;
+}
+
+.booking-auth-modal-close:hover {
+  color: var(--color-ivory);
+}
+
+.booking-auth-icon-badge {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+  color: var(--color-champagne-gold);
+}
+
+.booking-auth-title {
+  font-family: var(--font-serif);
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: var(--color-ivory);
+  margin-bottom: 0.5rem;
+}
+
+.booking-auth-subtitle {
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  color: rgba(245, 242, 235, 0.65);
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.booking-auth-recap {
+  background: #141414;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.booking-auth-recap-movie {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-metallic-gold);
+}
+
+.booking-auth-recap-detail {
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  color: var(--color-ivory-dim);
+}
+
+.booking-auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.booking-auth-btn-primary {
+  width: 100%;
+  background: linear-gradient(135deg, #F3E5AB 0%, #D4AF37 50%, #C49725 100%);
+  border: 1px solid rgba(243, 229, 171, 0.6);
+  color: #070707;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 0.95rem 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.booking-auth-btn-primary:hover {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F3E5AB 35%, #D4AF37 100%);
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.35);
+}
+
+.booking-auth-btn-secondary {
+  width: 100%;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--color-ivory);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.85rem 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.25s ease;
+  text-decoration: none;
+}
+
+.booking-auth-btn-secondary:hover {
+  border-color: var(--color-champagne-gold);
+  color: var(--color-champagne-gold);
+  background: rgba(212, 175, 55, 0.05);
+}
+

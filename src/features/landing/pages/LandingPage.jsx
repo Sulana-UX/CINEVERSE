@@ -4,6 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Navbar from '../../../components/layout/Navbar';
 import Footer from '../../../components/layout/Footer';
 import CinematicIntro from '../components/CinematicIntro';
+import RepertoryShowcase from '../components/RepertoryShowcase';
 import WelcomeSection from '../components/WelcomeSection';
 import ExperienceSection from '../components/ExperienceSection';
 import WorldSection from '../components/WorldSection';
@@ -28,6 +29,7 @@ export default function LandingPage() {
       {/* Main Landing Sections */}
       <main>
         <CinematicIntro />
+        <RepertoryShowcase />
         <WelcomeSection />
         <ExperienceSection />
         <WorldSection />

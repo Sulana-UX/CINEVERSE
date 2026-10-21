@@ -156,6 +156,20 @@ export const adminDataService = {
   },
 
   /**
+   * Add a new confirmed reservation from the patron booking portal
+   */
+  addBooking(newBooking) {
+    const current = this.getBookings();
+    const updated = [newBooking, ...current];
+    try {
+      localStorage.setItem(LOCAL_STORAGE_BOOKINGS_KEY, JSON.stringify(updated));
+    } catch {
+      // fallback
+    }
+    return updated;
+  },
+
+  /**
    * Toggle ticket check-in status
    */
   toggleCheckIn(bookingId) {

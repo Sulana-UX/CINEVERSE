@@ -89,6 +89,15 @@ export default function Navbar() {
             </li>
             <li>
               <a
+                href="#films"
+                className="nav-link"
+                onClick={(e) => handleNavClick(e, '#films')}
+              >
+                Now Showing
+              </a>
+            </li>
+            <li>
+              <a
                 href="#experience"
                 className="nav-link"
                 onClick={(e) => handleNavClick(e, '#experience')}
@@ -176,6 +185,15 @@ export default function Navbar() {
               onClick={(e) => handleNavClick(e, '#home')}
             >
               Home
+            </a>
+          </li>
+          <li>
+            <a
+              href="#films"
+              className="nav-link"
+              onClick={(e) => handleNavClick(e, '#films')}
+            >
+              Now Showing
             </a>
           </li>
           <li>

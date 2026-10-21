@@ -32,10 +32,10 @@ export default function LoginPage() {
   useEffect(() => {
     if (isAuthenticated) {
       if (isAdminUser(user)) {
-        const from = location.state?.from?.pathname;
-        navigate(from || '/admin', { replace: true });
+        const from = location.state?.from?.pathname || location.state?.from || '/admin';
+        navigate(from, { replace: true });
       } else {
-        const from = location.state?.from?.pathname || '/';
+        const from = location.state?.from?.pathname || location.state?.from || '/';
         navigate(from, { replace: true });
       }
     }
@@ -83,9 +83,10 @@ export default function LoginPage() {
 
     if (result.success) {
       if (isAdminUser(result.user)) {
-        navigate('/admin', { replace: true });
+        const from = location.state?.from?.pathname || location.state?.from || '/admin';
+        navigate(from, { replace: true });
       } else {
-        const from = location.state?.from?.pathname || '/';
+        const from = location.state?.from?.pathname || location.state?.from || '/';
         navigate(from, { replace: true });
       }
     }
@@ -141,7 +142,7 @@ export default function LoginPage() {
         specs: ['70MM DUAL LASER', 'DOLBY ATMOS SOUNDSTAGE', 'BESPOKE CONCIERGE'],
       }}
     >
-      {location.state?.adminRequired && (
+      {(location.state?.adminRequired || location.state?.message) && (
         <div
           className="auth-alert-banner"
           role="alert"

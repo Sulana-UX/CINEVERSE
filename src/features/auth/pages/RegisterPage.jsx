@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout';
 import AuthForm from '../components/AuthForm';
 import PasswordInput from '../components/PasswordInput';
@@ -8,6 +8,7 @@ import { validateRegisterForm } from '../validation/authValidation';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { register, loading, error: authError, clearError, isAuthenticated } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -21,9 +22,10 @@ export default function RegisterPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/', { replace: true });
+      const from = location.state?.from?.pathname || location.state?.from || '/';
+      navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, location]);
 
   useEffect(() => {
     return () => clearError();
@@ -62,7 +64,8 @@ export default function RegisterPage() {
     });
 
     if (result.success) {
-      navigate('/', { replace: true });
+      const from = location.state?.from?.pathname || location.state?.from || '/';
+      navigate(from, { replace: true });
     }
   };
 

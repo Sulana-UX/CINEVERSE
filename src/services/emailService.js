@@ -26,15 +26,10 @@ export const emailService = {
       const data = await response.json();
       return data;
     } catch (err) {
-      console.warn('[emailService] Local fetch fallback for sendOtp:', err.message);
-      // Fallback local OTP generator if server middleware is unreachable
-      const fallbackOtp = Math.floor(100000 + Math.random() * 900000).toString();
-      sessionStorage.setItem(`cineverse_otp_${email.toLowerCase()}`, fallbackOtp);
+      console.warn('[emailService] sendOtp error:', err.message);
       return {
-        success: true,
-        otp: fallbackOtp,
-        emailSent: false,
-        fallback: true,
+        success: false,
+        error: err.message || 'Unable to connect to verification service.',
       };
     }
   },
@@ -55,21 +50,16 @@ export const emailService = {
       });
 
       if (!response.ok) {
-        throw new Error(`Email server returned ${response.status}`);
+        throw new Error(`Verification service returned ${response.status}`);
       }
 
       const data = await response.json();
       return data;
     } catch (err) {
-      console.warn('[emailService] Local verify fallback for verifyOtp:', err.message);
-      const saved = sessionStorage.getItem(`cineverse_otp_${email.toLowerCase()}`);
-      if (saved && saved === otp.trim()) {
-        sessionStorage.removeItem(`cineverse_otp_${email.toLowerCase()}`);
-        return { success: true, verified: true };
-      }
+      console.warn('[emailService] verifyOtp error:', err.message);
       return {
         success: false,
-        error: 'Invalid verification key. Please enter the 6 digits accurately.',
+        error: err.message || 'Verification failed. Please try again.',
       };
     }
   },

@@ -79,12 +79,21 @@ function emailServerPlugin() {
               }
 
               res.setHeader('Content-Type', 'application/json');
+              if (!emailSent) {
+                return res.end(
+                  JSON.stringify({
+                    success: false,
+                    emailSent: false,
+                    error: `Unable to dispatch email (${emailError || 'Connection timeout'}). Outgoing SMTP ports 587/465 are blocked by your current network firewall.`,
+                    emailError,
+                  })
+                );
+              }
+
               return res.end(
                 JSON.stringify({
                   success: true,
-                  otp,
-                  emailSent,
-                  emailError,
+                  emailSent: true,
                 })
               );
             }

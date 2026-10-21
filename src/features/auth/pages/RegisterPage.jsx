@@ -30,7 +30,6 @@ export default function RegisterPage() {
   const [otpError, setOtpError] = useState(null);
   const [otpLoading, setOtpLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(60);
-  const [dispatchedHint, setDispatchedHint] = useState(null);
 
   const otpInputsRef = useRef([]);
 
@@ -94,13 +93,14 @@ export default function RegisterPage() {
       });
 
       setOtpLoading(false);
+
+      if (!result.success) {
+        setOtpError(result.error || 'Unable to deliver verification code. Please verify your email or check your connection.');
+        return;
+      }
+
       setStep('otp');
       setResendTimer(60);
-
-      // If development fallback is triggered or email sent
-      if (result.otp) {
-        setDispatchedHint(result.otp);
-      }
 
       // Auto-focus first digit box
       setTimeout(() => {
@@ -207,10 +207,11 @@ export default function RegisterPage() {
     });
 
     setOtpLoading(false);
-    setResendTimer(60);
-    if (result.otp) {
-      setDispatchedHint(result.otp);
+    if (!result.success) {
+      setOtpError(result.error || 'Failed to resend verification key.');
+      return;
     }
+    setResendTimer(60);
   };
 
   return (
@@ -346,17 +347,6 @@ export default function RegisterPage() {
           {otpError && (
             <div className="auth-alert-banner" role="alert">
               <span>{otpError}</span>
-            </div>
-          )}
-
-          {/* VIP Concierge Dispatch Alert (for seamless verification) */}
-          {dispatchedHint && (
-            <div className="auth-otp-dispatch-banner">
-              <Sparkles size={16} className="gold-icon" />
-              <span>
-                <strong>VIP Dispatch:</strong> Your verification key is{' '}
-                <strong style={{ letterSpacing: '0.15em', color: '#FFFFFF' }}>{dispatchedHint}</strong>
-              </span>
             </div>
           )}
 

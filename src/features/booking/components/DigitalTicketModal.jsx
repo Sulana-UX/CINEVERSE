@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { CheckCircle2, X, Download, Film, Sparkles } from 'lucide-react';
+import { CheckCircle2, X, Download, Film, Sparkles, Mail } from 'lucide-react';
 
 export default function DigitalTicketModal({
   booking,
@@ -26,6 +26,16 @@ export default function DigitalTicketModal({
               <CheckCircle2 size={18} className="gold-icon" />
               <span>PRIVATE RESERVATION CONFIRMED</span>
             </div>
+
+            {/* Email Dispatch Notice */}
+            {booking.guestEmail && (
+              <div className="ticket-email-dispatched-notice">
+                <Mail size={14} className="gold-icon" />
+                <span>
+                  Official Royal Pass dispatched to <strong>{booking.guestEmail}</strong>
+                </span>
+              </div>
+            )}
 
             {/* Royal Cinema Ticket Pass */}
             <div className="cinema-pass-ticket">

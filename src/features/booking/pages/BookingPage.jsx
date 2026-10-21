@@ -18,6 +18,7 @@ import {
 import { movieService } from '../../admin/services/movieService';
 import { adminDataService } from '../../admin/services/adminDataService';
 import { useAuth } from '../../auth/hooks/useAuth';
+import { emailService } from '../../../services/emailService';
 
 const PENDING_BOOKING_KEY = 'cineverse_pending_booking';
 
@@ -242,6 +243,12 @@ export default function BookingPage() {
 
     // Save to admin dashboard data store
     adminDataService.addBooking(bookingPayload);
+
+    // Dispatch official ticket email to patron
+    emailService.sendTicketEmail({
+      booking: bookingPayload,
+      to: bookingPayload.guestEmail,
+    });
 
     // Display digital cinema ticket pass
     setConfirmedBooking(bookingPayload);

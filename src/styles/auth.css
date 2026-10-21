@@ -1018,3 +1018,154 @@
     font-size: 1.35rem;
   }
 }
+
+/* --------------------------------------------------------------------------
+   14. Luxury 6-Digit Email OTP Verification Suite
+   -------------------------------------------------------------------------- */
+.auth-otp-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  animation: authFadeIn 0.3s ease;
+}
+
+.auth-otp-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-otp-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-champagne-gold, #D4AF37);
+  margin-bottom: 1.25rem;
+}
+
+.auth-otp-title {
+  font-family: var(--font-serif, "Cinzel", serif);
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: var(--color-ivory, #F5F2EB);
+  margin: 0 0 0.5rem;
+}
+
+.auth-otp-instruction {
+  font-family: var(--font-sans, sans-serif);
+  font-size: 0.84rem;
+  color: rgba(245, 242, 235, 0.65);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 380px;
+}
+
+.auth-otp-email-highlight {
+  color: var(--color-champagne-gold, #D4AF37);
+  font-weight: 600;
+}
+
+/* 6-Digit PIN Boxes */
+.auth-otp-boxes-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.65rem;
+  margin: 0.75rem 0;
+}
+
+.auth-otp-digit-input {
+  width: 46px;
+  height: 56px;
+  background: #121212;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #F3E5AB;
+  font-family: monospace, monospace;
+  font-size: 1.65rem;
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+  transition: all 0.25s ease;
+  border-radius: 2px;
+}
+
+.auth-otp-digit-input:focus {
+  border-color: #D4AF37;
+  background: #191919;
+  box-shadow: 0 0 16px rgba(212, 175, 55, 0.25);
+  transform: translateY(-2px);
+}
+
+.auth-otp-digit-input.has-value {
+  border-color: rgba(212, 175, 55, 0.5);
+  background: rgba(212, 175, 55, 0.05);
+}
+
+/* Dispatch Banner / Hint */
+.auth-otp-dispatch-banner {
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-family: var(--font-sans, sans-serif);
+  font-size: 0.8rem;
+  color: #F3E5AB;
+}
+
+/* Resend and Back actions */
+.auth-otp-footer-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.auth-otp-resend-btn {
+  background: none;
+  border: none;
+  color: #D4AF37;
+  font-family: var(--font-sans, sans-serif);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s ease;
+}
+
+.auth-otp-resend-btn:hover:not(:disabled) {
+  color: #FFFFFF;
+}
+
+.auth-otp-resend-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  color: rgba(245, 242, 235, 0.4);
+}
+
+.auth-otp-change-link {
+  background: none;
+  border: none;
+  color: rgba(245, 242, 235, 0.5);
+  font-family: var(--font-sans, sans-serif);
+  font-size: 0.76rem;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.auth-otp-change-link:hover {
+  color: var(--color-ivory, #F5F2EB);
+}
+

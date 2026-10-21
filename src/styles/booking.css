@@ -1608,3 +1608,16 @@
   background: rgba(212, 175, 55, 0.05);
 }
 
+.ticket-email-dispatched-notice {
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  padding: 0.65rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: #F3E5AB;
+  margin-bottom: 1.25rem;
+}
+

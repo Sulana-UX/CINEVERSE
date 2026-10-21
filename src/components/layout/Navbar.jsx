@@ -109,6 +109,11 @@ export default function Navbar() {
                 Reserve Seats
               </Link>
             </li>
+            <li>
+              <Link to="/admin" className="nav-link nav-admin-link">
+                Admin
+              </Link>
+            </li>
 
             {/* Authentication Member Status */}
             <li>
@@ -193,6 +198,15 @@ export default function Navbar() {
               onClick={() => setMobileMenuOpen(false)}
             >
               Reserve Seats
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/admin"
+              className="nav-link"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Admin Portal
             </Link>
           </li>
           <li>

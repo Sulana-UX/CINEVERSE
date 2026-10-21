@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Sparkles } from 'lucide-react';
 import Navbar from '../../../components/layout/Navbar';
@@ -14,17 +14,31 @@ import {
   SHOWTIMES,
   INITIAL_SEAT_GRID,
 } from '../data/mockCinemaData';
+import { movieService } from '../../admin/services/movieService';
 import { useAuth } from '../../auth/hooks/useAuth';
 
 export default function BookingPage() {
   const { user } = useAuth();
 
+  const [moviesList, setMoviesList] = useState(LUXURY_MOVIES);
   const [activeMovie, setActiveMovie] = useState(LUXURY_MOVIES[0]);
   const [activeDate, setActiveDate] = useState(SCREENING_DATES[0]);
   const [activeTime, setActiveTime] = useState(SHOWTIMES[2]); // 20:30
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [selectedAddons, setSelectedAddons] = useState({});
   const [confirmedBooking, setConfirmedBooking] = useState(null);
+
+  // Load latest repertory movies from service
+  useEffect(() => {
+    async function loadRepertory() {
+      const { data } = await movieService.getAllMovies();
+      if (data && data.length > 0) {
+        setMoviesList(data);
+        setActiveMovie(data[0]);
+      }
+    }
+    loadRepertory();
+  }, []);
 
   // Seat toggle handler
   const handleToggleSeat = (seatObj) => {
@@ -125,6 +139,7 @@ export default function BookingPage() {
 
           {/* Booking Flow Header (Movie, Date, Showtime) */}
           <BookingHeader
+            movies={moviesList}
             activeMovie={activeMovie}
             onSelectMovie={handleSelectMovie}
             activeDate={activeDate}

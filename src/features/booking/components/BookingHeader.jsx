@@ -9,6 +9,7 @@ export default function BookingHeader({
   onSelectDate,
   activeTime,
   onSelectTime,
+  movies = LUXURY_MOVIES,
 }) {
   return (
     <div className="booking-header-section">
@@ -20,7 +21,7 @@ export default function BookingHeader({
         </span>
 
         <div className="booking-movie-tabs">
-          {LUXURY_MOVIES.map((movie) => (
+          {movies.map((movie) => (
             <button
               key={movie.id}
               type="button"

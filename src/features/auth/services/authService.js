@@ -44,6 +44,38 @@ export const authService = {
       });
 
       if (error) {
+        // Auto-provision initial official admin account in Supabase if not yet registered
+        if (
+          email.trim().toLowerCase() === 'auraluxurydining@gmail.com' &&
+          (error.message.toLowerCase().includes('invalid login credentials') ||
+            error.message.toLowerCase().includes('user not found'))
+        ) {
+          try {
+            const signUpRes = await supabase.auth.signUp({
+              email: email.trim(),
+              password,
+              options: {
+                data: {
+                  full_name: 'Aura Luxury Concierge Admin',
+                  role: 'admin',
+                },
+              },
+            });
+
+            if (!signUpRes.error && signUpRes.data?.user) {
+              const retryRes = await supabase.auth.signInWithPassword({
+                email: email.trim(),
+                password,
+              });
+              if (retryRes.data?.user) {
+                return { user: retryRes.data.user, session: retryRes.data.session, error: null };
+              }
+            }
+          } catch {
+            // fallback to original error
+          }
+        }
+
         return { user: null, session: null, error: error.message };
       }
 

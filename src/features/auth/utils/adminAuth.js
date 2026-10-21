@@ -14,22 +14,19 @@ export function isAdminUser(user) {
     return true;
   }
 
-  // 2. Check configured admin emails from .env
+  // 2. Check explicitly authorized admin emails from .env or official admin accounts
   const envAdminEmails = (import.meta.env.VITE_ADMIN_EMAILS || '')
     .split(',')
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
 
-  if (envAdminEmails.includes(userEmail)) {
-    return true;
-  }
+  const officialAdminEmails = [
+    'auraluxurydining@gmail.com',
+    'admin@cineverse.com',
+    ...envAdminEmails,
+  ];
 
-  // 3. Fallback defaults: admin@cineverse.com or any email beginning with admin@
-  if (
-    userEmail === 'admin@cineverse.com' ||
-    userEmail.startsWith('admin@') ||
-    userEmail.includes('+admin@')
-  ) {
+  if (officialAdminEmails.includes(userEmail)) {
     return true;
   }
 

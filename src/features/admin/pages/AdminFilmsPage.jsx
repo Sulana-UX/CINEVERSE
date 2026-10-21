@@ -64,6 +64,8 @@ export default function AdminFilmsPage() {
     status: 'Now Showing',
   });
 
+  const [formErrors, setFormErrors] = useState({});
+
   // Load movies on mount
   useEffect(() => {
     let isMounted = true;

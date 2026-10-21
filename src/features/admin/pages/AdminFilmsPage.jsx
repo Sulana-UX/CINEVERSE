@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import {
   Film,
@@ -14,9 +15,12 @@ import {
   ExternalLink,
   Upload,
   Loader2,
+  RotateCcw,
+  LogOut,
 } from 'lucide-react';
 import { movieService } from '../services/movieService';
 import { uploadImageToCloudinary } from '../../../lib/cloudinary';
+import { useAuth } from '../../auth/hooks/useAuth';
 
 const DEFAULT_AUDITORIUMS = [
   'Auditorium 01 — The Sovereign Soundstage',
@@ -81,7 +85,24 @@ export default function AdminFilmsPage() {
     setLoading(false);
   };
 
-  const handleOpenAddModal = () => {
+  const { logout } = useAuth();
+
+  const handleAdminLogout = async () => {
+    await logout();
+  };
+
+  const handleRestoreDefaults = () => {
+    const defaults = movieService.resetToDefaultCatalog();
+    setMovies(defaults);
+    setNotification({
+      type: 'success',
+      message: 'Default 70mm repertory catalog restored successfully!',
+    });
+    setTimeout(() => setNotification(null), 4000);
+  };
+
+  const handleOpenAddModal = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
     setEditingMovieId(null);
     setFormData({
       title: '',
@@ -268,11 +289,30 @@ export default function AdminFilmsPage() {
               </Link>
               <button
                 type="button"
+                onClick={handleRestoreDefaults}
+                className="admin-restore-btn"
+                title="Restore default 70mm repertory catalog"
+                style={{ padding: '0.65rem 0.95rem', fontSize: '0.72rem' }}
+              >
+                <RotateCcw size={13} />
+                <span>Default Catalog</span>
+              </button>
+              <button
+                type="button"
                 onClick={handleOpenAddModal}
                 className="admin-primary-btn"
               >
                 <Plus size={16} />
                 <span>UPLOAD NEW FILM</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleAdminLogout}
+                className="admin-logout-btn"
+                title="Sign out of Admin session"
+              >
+                <LogOut size={14} />
+                <span>Sign Out</span>
               </button>
             </div>
           </div>
@@ -326,11 +366,37 @@ export default function AdminFilmsPage() {
             </p>
           </div>
 
-          {/* Movies Cards Grid */}
+          {/* Movies Cards Grid / Empty State */}
           {loading ? (
             <div className="admin-loading-state">
               <div className="admin-spinner" />
               <span>Loading Repertory Archive...</span>
+            </div>
+          ) : movies.length === 0 ? (
+            <div className="admin-empty-state">
+              <Film size={44} className="gold-icon admin-empty-icon" />
+              <h3 className="admin-empty-title">No Repertory Films in Archive</h3>
+              <p className="admin-empty-desc">
+                Your cinema library is currently empty. Upload your first 70mm presentation or restore the default repertory catalog.
+              </p>
+              <div className="admin-empty-actions">
+                <button
+                  type="button"
+                  onClick={handleOpenAddModal}
+                  className="admin-primary-btn"
+                >
+                  <Plus size={16} />
+                  <span>UPLOAD FIRST FILM</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRestoreDefaults}
+                  className="admin-restore-btn"
+                >
+                  <RotateCcw size={15} />
+                  <span>RESTORE DEFAULT CATALOG</span>
+                </button>
+              </div>
             </div>
           ) : (
             <div className="admin-films-grid">
@@ -424,10 +490,11 @@ export default function AdminFilmsPage() {
       </main>
 
       {/* =========================================================================
-          UPLOAD & EDIT FILM MODAL
+          UPLOAD & EDIT FILM MODAL (Rendered via Portal to document.body)
           ========================================================================= */}
-      {isModalOpen && (
-        <div className="admin-modal-backdrop" role="dialog" aria-modal="true">
+      {isModalOpen &&
+        createPortal(
+          <div className="admin-modal-backdrop" role="dialog" aria-modal="true">
           <div className="admin-modal-card">
             <button
               type="button"
@@ -720,7 +787,8 @@ export default function AdminFilmsPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

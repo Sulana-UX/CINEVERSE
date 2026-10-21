@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, User, LogOut } from 'lucide-react';
 import { useAuth } from '../../features/auth/hooks/useAuth';
+import { isAdminUser } from '../../features/auth/utils/adminAuth';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -109,11 +110,15 @@ export default function Navbar() {
                 Reserve Seats
               </Link>
             </li>
-            <li>
-              <Link to="/admin" className="nav-link nav-admin-link">
-                Admin
-              </Link>
-            </li>
+
+            {/* Admin Portal (Restricted to Administrators) */}
+            {isAuthenticated && isAdminUser(user) && (
+              <li>
+                <Link to="/admin" className="nav-link nav-admin-link">
+                  Admin Portal
+                </Link>
+              </li>
+            )}
 
             {/* Authentication Member Status */}
             <li>
@@ -200,15 +205,18 @@ export default function Navbar() {
               Reserve Seats
             </Link>
           </li>
-          <li>
-            <Link
-              to="/admin"
-              className="nav-link"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Admin Portal
-            </Link>
-          </li>
+          {/* Admin Portal Mobile Link */}
+          {isAuthenticated && isAdminUser(user) && (
+            <li>
+              <Link
+                to="/admin"
+                className="nav-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Admin Portal
+              </Link>
+            </li>
+          )}
           <li>
             {isAuthenticated ? (
               <button

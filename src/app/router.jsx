@@ -5,6 +5,7 @@ import LoginPage from '../features/auth/pages/LoginPage';
 import RegisterPage from '../features/auth/pages/RegisterPage';
 import BookingPage from '../features/booking/pages/BookingPage';
 import AdminFilmsPage from '../features/admin/pages/AdminFilmsPage';
+import AdminRoute from '../features/auth/components/AdminRoute';
 
 export function AppRouter() {
   return (
@@ -16,9 +17,23 @@ export function AppRouter() {
         {/* Luxury Booking & Seat Reservation Experience */}
         <Route path="/booking" element={<BookingPage />} />
 
-        {/* Admin Concierge & Film Upload Portal */}
-        <Route path="/admin" element={<AdminFilmsPage />} />
-        <Route path="/admin/movies" element={<AdminFilmsPage />} />
+        {/* Protected Admin Concierge & Film Upload Portal */}
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminFilmsPage />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/movies"
+          element={
+            <AdminRoute>
+              <AdminFilmsPage />
+            </AdminRoute>
+          }
+        />
 
         {/* Authentication Routes */}
         <Route path="/login" element={<LoginPage />} />

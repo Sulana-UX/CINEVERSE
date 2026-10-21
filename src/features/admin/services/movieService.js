@@ -13,7 +13,10 @@ function getLocalMovies() {
   try {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (saved) {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
     }
   } catch {
     // fallback
@@ -30,6 +33,13 @@ function saveLocalMovies(movies) {
 }
 
 export const movieService = {
+  /**
+   * Reset local catalog to default 70mm presentation films
+   */
+  resetToDefaultCatalog() {
+    saveLocalMovies(LUXURY_MOVIES);
+    return LUXURY_MOVIES;
+  },
   /**
    * Fetch all movies from Supabase or local store
    */

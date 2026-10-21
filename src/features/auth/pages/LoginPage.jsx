@@ -7,11 +7,12 @@ import AuthForm from '../components/AuthForm';
 import PasswordInput from '../components/PasswordInput';
 import { useAuth } from '../hooks/useAuth';
 import { validateLoginForm } from '../validation/authValidation';
+import { isAdminUser } from '../utils/adminAuth';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, resetPassword, loading, error: authError, clearError, isAuthenticated } = useAuth();
+  const { login, resetPassword, loading, error: authError, clearError, isAuthenticated, user } = useAuth();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -27,13 +28,18 @@ export default function LoginPage() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotStatus, setForgotStatus] = useState(null); // { type: 'success' | 'error', message: string }
 
-  // If already authenticated, redirect to destination or home
+  // If already authenticated, redirect to admin portal or destination or home
   useEffect(() => {
     if (isAuthenticated) {
-      const from = location.state?.from?.pathname || '/';
-      navigate(from, { replace: true });
+      if (isAdminUser(user)) {
+        const from = location.state?.from?.pathname;
+        navigate(from || '/admin', { replace: true });
+      } else {
+        const from = location.state?.from?.pathname || '/';
+        navigate(from, { replace: true });
+      }
     }
-  }, [isAuthenticated, navigate, location]);
+  }, [isAuthenticated, user, navigate, location]);
 
   // Clear auth errors when component unmounts or inputs change
   useEffect(() => {
@@ -76,8 +82,12 @@ export default function LoginPage() {
     });
 
     if (result.success) {
-      const from = location.state?.from?.pathname || '/';
-      navigate(from, { replace: true });
+      if (isAdminUser(result.user)) {
+        navigate('/admin', { replace: true });
+      } else {
+        const from = location.state?.from?.pathname || '/';
+        navigate(from, { replace: true });
+      }
     }
   };
 
@@ -131,6 +141,24 @@ export default function LoginPage() {
         specs: ['70MM DUAL LASER', 'DOLBY ATMOS SOUNDSTAGE', 'BESPOKE CONCIERGE'],
       }}
     >
+      {location.state?.adminRequired && (
+        <div
+          className="auth-alert-banner"
+          role="alert"
+          style={{
+            marginBottom: '1.25rem',
+            background: 'rgba(212, 175, 55, 0.1)',
+            borderColor: 'rgba(212, 175, 55, 0.4)',
+            color: '#F3E5AB',
+          }}
+        >
+          <span className="auth-alert-icon" style={{ color: '#D4AF37' }}>✦</span>
+          <span>
+            {location.state?.message || 'Admin privileges required. Sign in with administrator credentials.'}
+          </span>
+        </div>
+      )}
+
       <AuthForm
         onSubmit={handleSubmit}
         error={authError}

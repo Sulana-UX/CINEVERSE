@@ -808,6 +808,92 @@
   animation: cinemaSpin 0.9s linear infinite;
 }
 
+/* Empty State */
+.admin-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: #111111;
+  border: 1px dashed rgba(212, 175, 55, 0.35);
+  padding: 4.5rem 2rem;
+  margin: 1rem 0;
+}
+
+.admin-empty-icon {
+  margin-bottom: 1.25rem;
+  opacity: 0.85;
+}
+
+.admin-empty-title {
+  font-family: var(--font-serif-editorial);
+  font-size: 1.65rem;
+  font-weight: 500;
+  color: var(--color-ivory);
+  margin-bottom: 0.6rem;
+}
+
+.admin-empty-desc {
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  color: var(--color-ivory-dim);
+  max-width: 520px;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.admin-empty-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.admin-restore-btn {
+  background: #181818;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  color: var(--color-champagne-gold);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 0.75rem 1.25rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.admin-restore-btn:hover {
+  background: rgba(212, 175, 55, 0.15);
+  border-color: var(--color-metallic-gold);
+}
+
+.admin-logout-btn {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--color-ivory-dim);
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.65rem 0.95rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition: all 0.25s ease;
+}
+
+.admin-logout-btn:hover {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.1);
+}
+
 /* --------------------------------------------------------------------------
    5. Responsive Media Queries
    -------------------------------------------------------------------------- */

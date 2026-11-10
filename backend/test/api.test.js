@@ -42,7 +42,7 @@ describe('API', () => {
   });
 
   it('admin and account routes need a signed-in user', async () => {
-    for (const path of ['/api/admin/stats', '/api/admin/bookings']) {
+    for (const path of ['/api/admin/stats', '/api/admin/bookings', '/api/admin/bookings/by-ref/CV-7KQ2M9XA']) {
       // Without a database the admin router answers 503 before checking the user.
       assert.ok([401, 503].includes((await fetch(base + path)).status), path);
     }

@@ -49,6 +49,24 @@ export const adminBookingsApi = {
   },
 };
 
+/** Door check-in by booking reference (the page the ticket QR code opens). API shape. */
+export const doorCheckInApi = {
+  async find(ref) {
+    const { booking } = await apiGet(`/api/admin/bookings/by-ref/${encodeURIComponent(ref)}`, { auth: true });
+    return booking;
+  },
+  async setCheckedIn(id, checkedIn) {
+    const { booking } = await apiPost(`/api/admin/bookings/${id}/check-in`, { checkedIn }, { auth: true });
+    return booking;
+  },
+};
+
+/** Pull a booking reference out of whatever was typed or scanned (a bare code or a check-in link). */
+export function extractRef(input) {
+  const match = String(input || '').toUpperCase().match(/CV-[A-Z0-9]{4,16}/);
+  return match ? match[0] : null;
+}
+
 /** Money owed back to guests, and refunds paid in the last 30 days. */
 export const adminRefundsApi = {
   async list() {

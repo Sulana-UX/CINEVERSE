@@ -106,8 +106,11 @@ export function ticketEmail(booking) {
   const addons = Array.isArray(booking.addons) ? booking.addons : [];
   const total = booking.totalAmount != null ? money(booking.totalAmount, booking.currency) : '';
 
+  // The QR holds the staff check-in link (a phone camera opens it); older
+  // callers without a link fall back to the bare reference.
+  const qrData = booking.checkInUrl || booking.refCode || '';
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=0&data=${encodeURIComponent(
-    booking.refCode || ''
+    qrData
   )}&color=14-17-13&bgcolor=243-229-171`;
 
   const preheader = `${movie.title || 'Your film'} · ${showDate ? `${showDate.day} ${showDate.month}` : dateLine} · ${

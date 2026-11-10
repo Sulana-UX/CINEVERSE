@@ -16,6 +16,7 @@ import {
   validateRegisterForm,
 } from '../features/auth/validation/authValidation';
 import { destinationFor } from '../features/auth/utils/adminAuth';
+import { extractRef } from '../features/admin/services/adminBookingsApi';
 
 describe('money', () => {
   it('formats rupees without decimals', () => {
@@ -107,5 +108,13 @@ describe('auth forms', () => {
   it('checks the whole sign-up form', () => {
     const r = validateRegisterForm({ fullName: 'A', email: 'x', password: 'Cinema2026', confirmPassword: 'Cinema2027' });
     expect(Object.keys(r.errors).sort()).toEqual(['confirmPassword', 'email', 'fullName']);
+  });
+});
+
+describe('door check-in', () => {
+  it('reads the booking reference from a scanned link or a typed code', () => {
+    expect(extractRef('https://cineverse.vercel.app/admin/check-in/CV-7KQ2M9XA')).toBe('CV-7KQ2M9XA');
+    expect(extractRef(' cv-7kq2m9xa ')).toBe('CV-7KQ2M9XA');
+    expect(extractRef('hello')).toBe(null);
   });
 });

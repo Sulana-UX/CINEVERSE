@@ -1,0 +1,266 @@
+/* Door check-in page (opened by scanning a ticket QR code on a phone) */
+.ci-page {
+  min-height: 100vh;
+  background: var(--color-deep-black, #070707);
+  color: var(--color-ivory, #f5f2eb);
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+.ci-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 16px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.18);
+}
+
+.ci-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-champagne-gold, #f3e5ab);
+  text-decoration: none;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ci-brand {
+  font-size: 0.7rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(245, 242, 235, 0.55);
+}
+
+.ci-main {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 1.25rem 16px 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ci-card {
+  background: #111;
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  padding: 1.25rem;
+}
+
+.ci-center {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.ci-gold {
+  color: var(--color-metallic-gold, #d4af37);
+}
+
+.ci-title {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.ci-muted {
+  color: rgba(245, 242, 235, 0.65);
+  margin: 0;
+  line-height: 1.55;
+  font-size: 0.92rem;
+}
+
+.ci-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid;
+}
+
+.ci-status p {
+  margin: 0.3rem 0 0;
+  line-height: 1.5;
+  font-size: 0.92rem;
+}
+
+.ci-status svg {
+  flex: none;
+  margin-top: 0.1rem;
+}
+
+.ci-status.is-ready {
+  background: rgba(212, 175, 55, 0.1);
+  border-color: rgba(212, 175, 55, 0.55);
+  color: var(--color-champagne-gold, #f3e5ab);
+}
+
+.ci-status.is-good {
+  background: rgba(46, 160, 98, 0.14);
+  border-color: rgba(76, 201, 132, 0.6);
+  color: #b9f0cf;
+}
+
+.ci-status.is-warn {
+  background: rgba(230, 160, 40, 0.12);
+  border-color: rgba(240, 175, 60, 0.6);
+  color: #ffd99a;
+}
+
+.ci-status.is-bad {
+  background: rgba(139, 0, 0, 0.25);
+  border-color: rgba(220, 70, 70, 0.6);
+  color: #ffb4b4;
+}
+
+.ci-error {
+  margin: 0;
+  color: #ffb4b4;
+  font-size: 0.88rem;
+}
+
+.ci-ref {
+  margin: 0;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  letter-spacing: 0.12em;
+  color: var(--color-metallic-gold, #d4af37);
+  font-size: 0.85rem;
+}
+
+.ci-film {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 1.5rem;
+  margin: 0.35rem 0 1rem;
+}
+
+.ci-facts {
+  margin: 0;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.ci-facts > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.ci-facts dt {
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(245, 242, 235, 0.5);
+}
+
+.ci-facts dd {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+
+.ci-seats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ci-seats span {
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  color: var(--color-champagne-gold, #f3e5ab);
+  padding: 0.2rem 0.55rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.ci-addon {
+  display: block;
+}
+
+.ci-primary,
+.ci-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+}
+
+.ci-primary {
+  min-height: 64px;
+  font-size: 1rem;
+  background: linear-gradient(135deg, #f3e5ab 0%, #d4af37 50%, #c49725 100%);
+  color: #111;
+}
+
+.ci-secondary {
+  min-height: 48px;
+  font-size: 0.78rem;
+  background: transparent;
+  color: var(--color-champagne-gold, #f3e5ab);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+}
+
+.ci-primary:disabled,
+.ci-secondary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.ci-manual label {
+  display: block;
+  font-size: 0.78rem;
+  color: rgba(245, 242, 235, 0.65);
+  margin-bottom: 0.6rem;
+  line-height: 1.5;
+}
+
+.ci-manual-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ci-manual-row input {
+  flex: 1;
+  min-width: 0;
+  background: #0b0b0b;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  color: var(--color-ivory, #f5f2eb);
+  padding: 0.8rem 0.9rem;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ci-manual-row button {
+  background: transparent;
+  border: 1px solid rgba(212, 175, 55, 0.6);
+  color: var(--color-champagne-gold, #f3e5ab);
+  padding: 0 1.2rem;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ci-spin {
+  animation: ci-spin 1s linear infinite;
+}
+
+@keyframes ci-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ci-typed-error { margin-top: 0.6rem; }

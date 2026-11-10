@@ -5853,3 +5853,35 @@
     white-space: nowrap;
   }
 }
+
+/* Door check-in shortcut above the bookings filters */
+.bookings-door-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.bookings-door-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  border: 1px solid rgba(212, 175, 55, 0.55);
+  color: var(--color-champagne-gold, #f3e5ab);
+  text-decoration: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.bookings-door-link:hover {
+  background: rgba(212, 175, 55, 0.12);
+}
+
+.bookings-door-hint {
+  font-size: 0.78rem;
+  color: rgba(245, 242, 235, 0.55);
+}

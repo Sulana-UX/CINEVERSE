@@ -48,6 +48,14 @@ async function request(method, path, { body, auth = false } = {}) {
     throw error;
   }
 
+  // A 2xx without JSON means the request never reached the API, e.g. the dev
+  // server answered with index.html because its /api proxy is not active.
+  if (data === null && response.status !== 204) {
+    const error = new Error('The server sent an unexpected reply. Restart `npm run dev` and try again.');
+    error.status = response.status;
+    throw error;
+  }
+
   return data;
 }
 

@@ -25,6 +25,7 @@ import AdminBookingsTab from '../components/AdminBookingsTab';
 import AdminAuditoriumsTab from '../components/AdminAuditoriumsTab';
 import AdminConciergeTab from '../components/AdminConciergeTab';
 import TabErrorBoundary from '../components/TabErrorBoundary';
+import AdminRefundsPanel from '../components/AdminRefundsPanel';
 
 const DEFAULT_FORMATS = [
   '70MM DUAL LASER • DOLBY ATMOS',
@@ -517,6 +518,7 @@ export default function AdminFilmsPage() {
           {/* TAB 3: GUEST RESERVATIONS */}
           {activeTab === 'bookings' && (
             <TabErrorBoundary tabName="Guest Reservations">
+              <AdminRefundsPanel onNotify={notify} />
               <AdminBookingsTab
                 bookings={bookings}
                 onToggleCheckIn={handleToggleCheckIn}

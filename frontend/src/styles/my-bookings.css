@@ -1,0 +1,507 @@
+/* ==========================================================================
+   CINEVERSE — My Bookings (mb-*). Uses the booking tokens from booking-flow.css.
+   ========================================================================== */
+
+.mb-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ---- Tabs ---- */
+.mb-tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 1.25rem;
+  padding: 0.3rem;
+  border: 1px solid var(--bk-line);
+  border-radius: 999px;
+  background: var(--bk-panel);
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.mb-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.1rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--bk-muted);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.mb-tab:hover {
+  color: var(--bk-text);
+}
+
+.mb-tab.is-active {
+  background: rgba(212, 175, 55, 0.14);
+  color: var(--bk-champagne);
+}
+
+.mb-tab-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 0.7rem;
+  letter-spacing: 0;
+}
+
+.mb-tab.is-active .mb-tab-count {
+  background: var(--bk-gold);
+  color: #1a1408;
+}
+
+/* ---- Cards ---- */
+.mb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mb-card {
+  border: 1px solid var(--bk-line-gold);
+  border-radius: 16px;
+  background: var(--bk-panel);
+  overflow: hidden;
+}
+
+.mb-card.is-cancelled,
+.mb-card.is-past {
+  border-color: var(--bk-line);
+}
+
+.mb-card-body {
+  display: flex;
+  gap: 1.1rem;
+  padding: 1.1rem;
+}
+
+.mb-poster {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 84px;
+  aspect-ratio: 2 / 3;
+  border-radius: 10px;
+  background: var(--bk-panel-2, #151517);
+  color: var(--bk-gold);
+  overflow: hidden;
+}
+
+.mb-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mb-card.is-cancelled .mb-poster img {
+  filter: grayscale(0.85);
+  opacity: 0.6;
+}
+
+.mb-info {
+  min-width: 0;
+  flex: 1;
+  font-family: var(--font-sans);
+}
+
+.mb-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.mb-status {
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.mb-status.is-upcoming {
+  background: rgba(52, 211, 153, 0.12);
+  color: var(--bk-success);
+}
+
+.mb-status.is-past {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--bk-muted);
+}
+
+.mb-status.is-cancelled {
+  background: rgba(248, 113, 113, 0.12);
+  color: var(--bk-danger);
+}
+
+.mb-ref {
+  font-family: 'Courier New', monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: var(--bk-faint);
+}
+
+.mb-title {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  line-height: 1.25;
+  color: var(--bk-text);
+}
+
+.mb-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+  color: var(--bk-muted);
+}
+
+.mb-meta li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.mb-meta svg {
+  color: var(--bk-gold);
+}
+
+.mb-seats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.mb-seat {
+  padding: 0.18rem 0.5rem;
+  border: 1px solid var(--bk-line-gold);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--bk-champagne);
+}
+
+.mb-total {
+  margin-left: auto;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--bk-champagne);
+}
+
+.mb-hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--bk-muted);
+}
+
+.mb-hint.is-good {
+  color: var(--bk-success);
+}
+
+.mb-refund {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--bk-muted);
+}
+
+.mb-refund.is-pending {
+  color: var(--bk-champagne);
+}
+
+.mb-refund.is-done {
+  color: var(--bk-success);
+}
+
+.mb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.85rem 1.1rem;
+  border-top: 1px solid var(--bk-line);
+}
+
+.mb-actions .bk-ghost-btn,
+.mb-cancel-btn {
+  white-space: nowrap;
+}
+
+.mb-actions .bk-ghost-btn {
+  padding: 0.6rem 1rem;
+  font-size: 0.78rem;
+}
+
+.mb-chevron {
+  transition: transform 0.2s ease;
+}
+
+.mb-chevron.is-open {
+  transform: rotate(180deg);
+}
+
+.mb-cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-left: auto;
+  padding: 0.6rem 1rem;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  background: transparent;
+  color: #f9b4b4;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.mb-cancel-btn:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.1);
+  border-color: var(--bk-danger);
+}
+
+.mb-cancel-btn.is-solid {
+  margin-left: 0;
+  background: rgba(248, 113, 113, 0.16);
+  border-color: rgba(248, 113, 113, 0.5);
+  color: #ffd2d2;
+}
+
+.mb-cancel-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mb-ticket-wrap {
+  padding: 0 1.1rem 1.1rem;
+}
+
+/* ---- Empty / notice ---- */
+.mb-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+}
+
+.mb-empty h2 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  color: var(--bk-text);
+}
+
+.mb-empty-btn {
+  width: auto;
+  margin-top: 0.5rem;
+  padding-inline: 2rem;
+}
+
+.mb-notice {
+  align-items: center;
+}
+
+.mb-notice p {
+  flex: 1;
+  margin: 0;
+  color: var(--bk-text);
+}
+
+.mb-notice-close {
+  background: none;
+  border: none;
+  color: var(--bk-muted);
+  cursor: pointer;
+}
+
+/* ---- Cancel dialog ---- */
+.mb-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.mb-dialog {
+  position: relative;
+  width: min(460px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: 1.75rem 1.5rem 1.5rem;
+  border: 1px solid var(--bk-line-gold);
+  border-radius: 18px;
+  background: #0f0d0a;
+  font-family: var(--font-sans);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+}
+
+.mb-dialog-close {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  background: none;
+  border: none;
+  color: var(--bk-muted);
+  cursor: pointer;
+}
+
+.mb-dialog-title {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  color: var(--bk-text);
+}
+
+.mb-dialog-film {
+  margin: 0 0 1.1rem;
+  font-size: 0.82rem;
+  color: var(--bk-muted);
+}
+
+.mb-dialog-sums {
+  margin: 0 0 1rem;
+  border: 1px solid var(--bk-line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.mb-dialog-sums div {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+}
+
+.mb-dialog-sums div + div {
+  border-top: 1px solid var(--bk-line);
+}
+
+.mb-dialog-sums dt {
+  font-size: 0.8rem;
+  color: var(--bk-muted);
+}
+
+.mb-dialog-sums dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--bk-text);
+}
+
+.mb-dialog-sums .is-refund {
+  background: rgba(212, 175, 55, 0.07);
+}
+
+.mb-dialog-sums .is-refund dd {
+  color: var(--bk-champagne);
+  font-size: 1.05rem;
+}
+
+.mb-dialog-rules {
+  margin: 0 0 0.75rem;
+  padding-left: 1.1rem;
+  font-size: 0.76rem;
+  line-height: 1.7;
+  color: var(--bk-muted);
+}
+
+.mb-dialog-note {
+  margin: 0 0 1rem;
+  font-size: 0.76rem;
+  line-height: 1.55;
+  color: var(--bk-faint);
+}
+
+.mb-dialog-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  color: var(--bk-danger);
+}
+
+.mb-dialog-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.mb-dialog-actions > * {
+  flex: 1;
+}
+
+@media (max-width: 560px) {
+  .mb-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    width: 100%;
+  }
+
+  .mb-tab {
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.55rem 0.4rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+  }
+
+  .mb-card-body {
+    gap: 0.85rem;
+    padding: 0.9rem;
+  }
+
+  .mb-poster {
+    width: 64px;
+  }
+
+  .mb-title {
+    font-size: 1.05rem;
+  }
+
+  .mb-actions {
+    padding: 0.75rem 0.9rem;
+  }
+
+  .mb-actions > * {
+    flex: 1;
+  }
+
+  .mb-cancel-btn {
+    margin-left: 0;
+  }
+
+  .mb-dialog-actions {
+    flex-direction: column-reverse;
+  }
+}

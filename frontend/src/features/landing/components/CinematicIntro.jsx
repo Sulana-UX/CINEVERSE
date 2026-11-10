@@ -4,6 +4,9 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { AlertCircle, Play, Pause } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
+// Phones resize the viewport when the address bar slides in and out. Without
+// this, every resize re-measures the pin and the page jumps while scrolling.
+ScrollTrigger.config({ ignoreMobileResize: true });
 
 const VIDEO_URL = '/videos/cinema-intro.mp4';
 
@@ -105,16 +108,63 @@ export default function CinematicIntro() {
     setIsVideoLoaded(true);
   };
 
+  // 1. Pin the hero and reserve its scroll space straight away, before the
+  //    video has downloaded. Adding it later made the page jump on slow
+  //    connections while people were already scrolling.
   useEffect(() => {
-    if (!isVideoLoaded || hasError || prefersReducedMotion) return;
+    if (hasError || prefersReducedMotion) return undefined;
 
-    const video = videoRef.current;
     const container = containerRef.current;
     const hero = heroRef.current;
     const titleOverlay = titleOverlayRef.current;
     const scrollIndicator = scrollIndicatorRef.current;
+    if (!container || !hero) return undefined;
 
-    if (!video || !container || !hero) return;
+    const ctx = gsap.context(() => {
+      const scrollDistance = Math.max(window.innerHeight * 3.5, 2800);
+      const scrollProxy = { progress: 0 };
+
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: container,
+          start: 'top top',
+          end: `+=${scrollDistance}`,
+          pin: hero,
+          anticipatePin: 1,
+          scrub: 0.8, // momentum damping smooths out scroll jitter
+          onUpdate: () => {
+            // The duration is only known once the video has loaded.
+            targetTimeRef.current = scrollProxy.progress * Math.max(0.1, durationRef.current - 0.05);
+          },
+        },
+      });
+
+      tl.to(scrollProxy, { progress: 1, ease: 'none', duration: 1 });
+
+      // Title overlay fade and subtle lift
+      if (titleOverlay) {
+        tl.to(titleOverlay, { opacity: 0, y: -45, ease: 'power2.out', duration: 0.22 }, 0);
+      }
+
+      // Scroll indicator quick fade
+      if (scrollIndicator) {
+        tl.to(scrollIndicator, { opacity: 0, ease: 'power2.out', duration: 0.12 }, 0);
+      }
+    }, container);
+
+    // Other sections set up their scroll animations first; let them re-measure
+    // now that the pin has added its scroll space.
+    ScrollTrigger.refresh();
+
+    return () => ctx.revert();
+  }, [hasError, prefersReducedMotion]);
+
+  // 2. Once the video is in memory, follow the scroll position with it.
+  useEffect(() => {
+    if (!isVideoLoaded || hasError || prefersReducedMotion) return undefined;
+
+    const video = videoRef.current;
+    if (!video) return undefined;
 
     let rafId;
     let seekUnlockTimer = null;
@@ -122,19 +172,17 @@ export default function CinematicIntro() {
     const handleSeeked = () => {
       isSeekingRef.current = false;
     };
-
     video.addEventListener('seeked', handleSeeked);
 
-    // High performance RAF loop with smooth linear interpolation (LERP)
+    // RAF loop with linear interpolation, so the video eases towards the
+    // scroll position instead of jumping (also when the guest scrolled while
+    // the video was still downloading).
     const tick = () => {
       const target = targetTimeRef.current;
-      const currentSmoothed = smoothedTimeRef.current;
-
-      // Smooth lerp damping towards target time (0.12 provides responsive yet butter-smooth tracking)
-      const nextSmoothed = currentSmoothed + (target - currentSmoothed) * 0.12;
+      const nextSmoothed = smoothedTimeRef.current + (target - smoothedTimeRef.current) * 0.12;
       smoothedTimeRef.current = nextSmoothed;
 
-      // Only seek if difference is noticeable and video decoder is ready
+      // Only seek when the difference is noticeable and the decoder is free
       const diff = Math.abs(video.currentTime - nextSmoothed);
       if (diff > 0.015 && !isSeekingRef.current) {
         isSeekingRef.current = true;
@@ -144,7 +192,7 @@ export default function CinematicIntro() {
           isSeekingRef.current = false;
         }
 
-        // Safety fallback timer to prevent decoder hang
+        // Safety fallback in case 'seeked' never fires
         clearTimeout(seekUnlockTimer);
         seekUnlockTimer = setTimeout(() => {
           isSeekingRef.current = false;
@@ -153,75 +201,12 @@ export default function CinematicIntro() {
 
       rafId = requestAnimationFrame(tick);
     };
-
     rafId = requestAnimationFrame(tick);
-
-    const ctx = gsap.context(() => {
-      const scrollDistance = Math.max(window.innerHeight * 3.5, 2800);
-      const maxDuration = Math.max(0.1, durationRef.current - 0.05);
-
-      const scrollProxy = { time: 0 };
-
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: container,
-          start: 'top top',
-          end: `+=${scrollDistance}`,
-          pin: hero,
-          anticipatePin: 1,
-          scrub: 0.8, // Elegant GSAP momentum damping eliminates scroll jitter
-          onUpdate: () => {
-            targetTimeRef.current = scrollProxy.time;
-          },
-        },
-      });
-
-      // Smooth progress proxy animation
-      tl.to(scrollProxy, {
-        time: maxDuration,
-        ease: 'none',
-        duration: 1,
-      });
-
-      // Title overlay fade and subtle lift
-      if (titleOverlay) {
-        tl.to(
-          titleOverlay,
-          {
-            opacity: 0,
-            y: -45,
-            ease: 'power2.out',
-            duration: 0.22,
-          },
-          0
-        );
-      }
-
-      // Scroll indicator quick fade
-      if (scrollIndicator) {
-        tl.to(
-          scrollIndicator,
-          {
-            opacity: 0,
-            ease: 'power2.out',
-            duration: 0.12,
-          },
-          0
-        );
-      }
-    }, container);
-
-    // The pin adds several screens of scroll space after the rest of the page
-    // has set up its own scroll animations, so let them re-measure.
-    ScrollTrigger.refresh();
 
     return () => {
       cancelAnimationFrame(rafId);
       clearTimeout(seekUnlockTimer);
-      if (video) {
-        video.removeEventListener('seeked', handleSeeked);
-      }
-      ctx.revert();
+      video.removeEventListener('seeked', handleSeeked);
     };
   }, [isVideoLoaded, hasError, prefersReducedMotion]);
 

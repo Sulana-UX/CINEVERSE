@@ -854,3 +854,30 @@
   align-items: center;
   gap: 0.35rem;
 }
+
+/* Bottom banner on phones: icon, text and button stacked, full width */
+@media (max-width: 600px) {
+  .repertory-bottom-banner {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1.5rem 1.25rem;
+    gap: 1.25rem;
+  }
+
+  .banner-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .banner-title {
+    font-size: 1.05rem;
+    line-height: 1.4;
+  }
+
+  .banner-cta-btn {
+    justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}

@@ -39,21 +39,3 @@ export const adminBookingsApi = {
     return toAdminBooking(booking);
   },
 };
-
-/** Dashboard KPIs from real bookings plus the (still local) concierge orders. */
-export function computeDashboardMetrics(bookings, orders, auditoriums = []) {
-  const ticketRevenue = bookings.reduce((sum, b) => sum + (Number(b.totalAmount) || 0), 0);
-  const conciergeRevenue = orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
-  const totalSeatsBooked = bookings.reduce((n, b) => n + (Array.isArray(b.seats) ? b.seats.length : 0), 0);
-  const capacity = auditoriums.reduce((n, a) => n + (a.totalSeats || 0), 0);
-
-  return {
-    totalGross: ticketRevenue + conciergeRevenue,
-    ticketRevenue,
-    totalBookings: bookings.length,
-    totalSeatsBooked,
-    checkedInCount: bookings.filter((b) => b.checkedIn).length,
-    conciergeOrdersCount: orders.length,
-    occupancyRate: capacity ? Math.min(100, Math.round((totalSeatsBooked / capacity) * 100)) : 0,
-  };
-}

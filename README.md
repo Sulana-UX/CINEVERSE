@@ -104,6 +104,7 @@ In the Supabase dashboard, open **SQL Editor > New query**, then paste and run e
 
 1. `backend/supabase/migrations/001_admin_users.sql`
 2. `backend/supabase/migrations/002_bookings.sql`
+3. `backend/supabase/migrations/003_admin_dashboard.sql`
 
 ### 5. Create an admin account
 
@@ -199,6 +200,7 @@ Prices, the seat layout, extras, the 8-seat limit and the 10-minute hold can all
 - Passwords are stored hashed by Supabase Auth. They are not in the code.
 - The `public.admin_users` table lists which users are admins. Row Level Security lets a signed-in user read only their own row, so nobody can make themselves an admin from the browser.
 - The admin check in the browser only decides what the screen shows. Every admin API request is checked again on the server.
+- Browsers can read the `movies` table but cannot change it. Films are added, edited and removed through the admin API, which checks the data first: valid showtimes, no two screenings overlapping in the same hall, and no removing a showtime or film that guests have already booked.
 - To remove an admin, run `delete from public.admin_users where user_id = '<uuid>';` in the SQL editor.
 
 ## API
@@ -216,8 +218,16 @@ Prices, the seat layout, extras, the 8-seat limit and the 10-minute hold can all
 | GET | `/api/booking/:ref` | | One booking (owner or admin) |
 | POST | `/api/booking/:ref/cancel` | | Release an unpaid hold |
 | POST | `/api/payments/payhere/notify` | PayHere form post | Payment result from PayHere |
+| GET | `/api/admin/stats` | | Overview numbers and charts (admin) |
 | GET | `/api/admin/bookings` | | Paid bookings (admin) |
 | POST | `/api/admin/bookings/:id/check-in` | `{ checkedIn }` | Door check-in (admin) |
+| GET / POST | `/api/admin/movies` | film fields | List films / add a film (admin) |
+| PUT / DELETE | `/api/admin/movies/:id` | film fields | Edit / remove a film (admin) |
+| GET | `/api/admin/auditoriums` | | Halls with what is playing now (admin) |
+| PATCH | `/api/admin/auditoriums/:id` | `{ status, projectorOn, audioPreset, lightingPreset, temperature }` | Change hall settings (admin) |
+| POST | `/api/admin/auditoriums/house-lights` | | Full lights in every hall (admin) |
+| GET | `/api/admin/concierge-orders` | | In-seat orders for today and upcoming shows (admin) |
+| PATCH | `/api/admin/concierge-orders/:bookingId` | `{ status }` | Pending, Preparing or Delivered (admin) |
 | POST | `/api/uploads/cloudinary-signature` | | Signature for a browser upload to Cloudinary |
 
 Verification codes are kept in the API's memory, so they are lost when the server restarts.

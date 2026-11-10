@@ -1,18 +1,11 @@
 import { Router } from 'express';
-import { supabaseAdmin } from '../lib/supabaseAdmin.js';
-import { requireAdmin, requireUser } from '../middleware/auth.js';
-import { toClientBooking } from '../services/bookingService.js';
+import { supabaseAdmin } from '../../lib/supabaseAdmin.js';
+import { toClientBooking } from '../../services/bookingService.js';
 
 const router = Router();
 
-router.use((_req, res, next) => {
-  if (!supabaseAdmin) return res.status(503).json({ error: 'Database not configured.' });
-  return next();
-});
-router.use(requireUser, requireAdmin);
-
-/** GET /api/admin/bookings: paid reservations, newest first. */
-router.get('/bookings', async (_req, res, next) => {
+/** GET /api/admin/bookings: paid reservations, newest show first. */
+router.get('/', async (_req, res, next) => {
   try {
     const { data, error } = await supabaseAdmin
       .from('bookings')
@@ -29,7 +22,7 @@ router.get('/bookings', async (_req, res, next) => {
 });
 
 /** POST /api/admin/bookings/:id/check-in  { checkedIn: boolean } */
-router.post('/bookings/:id/check-in', async (req, res, next) => {
+router.post('/:id/check-in', async (req, res, next) => {
   try {
     const checkedIn = Boolean(req.body?.checkedIn);
     const { data, error } = await supabaseAdmin

@@ -1,97 +1,36 @@
 import React, { useState } from 'react';
 import { PieChart as PieIcon, CheckCircle2, Award } from 'lucide-react';
+import { formatLKR } from '../../../../utils/currency';
 
-export default function OccupancyDonutChart() {
+const PALETTE = [
+  { color: '#10B981', gradientId: 'emeraldDonutGrad', accentBg: 'rgba(16, 185, 129, 0.12)' },
+  { color: '#D4AF37', gradientId: 'indigoDonutGrad', accentBg: 'rgba(212, 175, 55, 0.10)' },
+  { color: '#A78BFA', gradientId: 'amberDonutGrad', accentBg: 'rgba(167, 139, 250, 0.12)' },
+];
+
+/** Each slice is that group's share of the seats sold today. */
+function toSlices(rows, subtitle) {
+  const sold = rows.reduce((n, r) => n + r.occupied, 0);
+  return rows.map((r, i) => ({
+    ...r,
+    ...PALETTE[i % PALETTE.length],
+    format: subtitle(r),
+    percentage: sold ? Math.round((r.occupied / sold) * 100) : 0,
+    fill: r.capacity ? Math.round((r.occupied / r.capacity) * 100) : 0,
+  }));
+}
+
+export default function OccupancyDonutChart({ halls = [], tiers = [], seatsSold = 0, capacity = 0 }) {
   const [activeMode, setActiveMode] = useState('hall'); // 'hall' or 'tier'
   const [hoveredSlice, setHoveredSlice] = useState(null);
 
-  // Soundstages Distribution
-  const HALL_DATA = [
-    {
-      id: 'sov',
-      name: 'The Sovereign Soundstage',
-      format: '70mm Dual Laser',
-      percentage: 48,
-      occupied: 20,
-      capacity: 20,
-      gross: 730,
-      color: '#10B981',
-      gradientId: 'emeraldDonutGrad',
-      accentBg: 'rgba(16, 185, 129, 0.12)',
-      accentBorder: 'rgba(16, 185, 129, 0.32)',
-    },
-    {
-      id: 'dir',
-      name: 'The Director’s Loge',
-      format: '70mm Panavision',
-      percentage: 32,
-      occupied: 14,
-      capacity: 16,
-      gross: 490,
-      color: '#D4AF37',
-      gradientId: 'indigoDonutGrad',
-      accentBg: 'rgba(212, 175, 55, 0.10)',
-      accentBorder: 'rgba(212, 175, 55, 0.32)',
-    },
-    {
-      id: 'qua',
-      name: 'The Quantum Chamber',
-      format: '10th Anniv. 70mm',
-      percentage: 20,
-      occupied: 10,
-      capacity: 12,
-      gross: 304,
-      color: '#A78BFA',
-      gradientId: 'amberDonutGrad',
-      accentBg: 'rgba(167, 139, 250, 0.12)',
-      accentBorder: 'rgba(167, 139, 250, 0.32)',
-    },
-  ];
-
-  // Seating Tier Distribution
-  const TIER_DATA = [
-    {
-      id: 'sov-tier',
-      name: 'Sovereign Recliners',
-      format: 'Heated Leather & Sommelier',
-      percentage: 45,
-      occupied: 20,
-      capacity: 22,
-      gross: 685,
-      color: '#D4AF37',
-      gradientId: 'indigoDonutGrad',
-      accentBg: 'rgba(212, 175, 55, 0.10)',
-      accentBorder: 'rgba(212, 175, 55, 0.32)',
-    },
-    {
-      id: 'dir-tier',
-      name: 'Director Private Suites',
-      format: 'Dolby Personal Soundstage',
-      percentage: 35,
-      occupied: 14,
-      capacity: 16,
-      gross: 533,
-      color: '#10B981',
-      gradientId: 'emeraldDonutGrad',
-      accentBg: 'rgba(16, 185, 129, 0.12)',
-      accentBorder: 'rgba(16, 185, 129, 0.32)',
-    },
-    {
-      id: 'bal-tier',
-      name: 'Royal Balcony Club',
-      format: 'Elevated Sightline Tier',
-      percentage: 20,
-      occupied: 10,
-      capacity: 10,
-      gross: 306,
-      color: '#A78BFA',
-      gradientId: 'amberDonutGrad',
-      accentBg: 'rgba(167, 139, 250, 0.12)',
-      accentBorder: 'rgba(167, 139, 250, 0.32)',
-    },
-  ];
-
-  const dataset = activeMode === 'hall' ? HALL_DATA : TIER_DATA;
+  const dataset =
+    activeMode === 'hall'
+      ? toSlices(halls, (h) => `${h.shows} screening${h.shows === 1 ? '' : 's'} today`)
+      : toSlices(tiers, (t) => `${formatLKR(t.price)} per seat`);
+  const occupancy = capacity ? Math.round((seatsSold / capacity) * 100) : 0;
+  const busiest = dataset.reduce((best, d) => (d.fill > (best?.fill ?? -1) ? d : best), null);
+  const topEarner = dataset.reduce((best, d) => (d.gross > (best?.gross ?? -1) ? d : best), null);
 
   // Donut geometry constants
   const size = 260;
@@ -101,11 +40,10 @@ export default function OccupancyDonutChart() {
   const circumference = 2 * Math.PI * radius;
 
   // Calculate cumulative offsets
-  let cumulativePercentage = 0;
-  const slicesWithOffsets = dataset.map((item) => {
+  const slicesWithOffsets = dataset.map((item, index) => {
+    const before = dataset.slice(0, index).reduce((sum, d) => sum + d.percentage, 0);
     const strokeDasharray = `${(item.percentage / 100) * circumference} ${circumference}`;
-    const strokeDashoffset = -((cumulativePercentage / 100) * circumference);
-    cumulativePercentage += item.percentage;
+    const strokeDashoffset = -((before / 100) * circumference);
     return {
       ...item,
       strokeDasharray,
@@ -124,9 +62,9 @@ export default function OccupancyDonutChart() {
             <PieIcon size={18} className="chart-header-icon" />
           </div>
           <div>
-            <h3 className="chart-main-title">Soundstage Capacity & Revenue</h3>
+            <h3 className="chart-main-title">Today's Seat Occupancy</h3>
             <p className="chart-main-subtitle">
-              Interactive occupancy breakdown across 3 luxury suites
+              Seats sold for today's screenings
             </p>
           </div>
         </div>
@@ -140,7 +78,7 @@ export default function OccupancyDonutChart() {
             }}
             className={`segmented-btn ${activeMode === 'hall' ? 'is-active' : ''}`}
           >
-            By Soundstage
+            By Hall
           </button>
           <button
             type="button"
@@ -150,7 +88,7 @@ export default function OccupancyDonutChart() {
             }}
             className={`segmented-btn ${activeMode === 'tier' ? 'is-active' : ''}`}
           >
-            By Seating Tier
+            By Seat Tier
           </button>
         </div>
       </div>
@@ -196,6 +134,7 @@ export default function OccupancyDonutChart() {
               return (
                 <circle
                   key={slice.id}
+                  opacity={slice.percentage ? 1 : 0}
                   cx={center}
                   cy={center}
                   r={radius}
@@ -228,13 +167,15 @@ export default function OccupancyDonutChart() {
                   {activeItem.percentage}%
                 </span>
                 <span className="callout-name">{activeItem.name.split('—')[0]}</span>
-                <span className="callout-gross font-mono">${activeItem.gross}</span>
+                <span className="callout-gross font-mono">{formatLKR(activeItem.gross)}</span>
               </div>
             ) : (
               <div className="callout-inner">
-                <span className="callout-pct font-mono text-indigo">86%</span>
-                <span className="callout-title">SEAT CAPACITY</span>
-                <span className="callout-sub">44 / 48 Reserved</span>
+                <span className="callout-pct font-mono text-indigo">{occupancy}%</span>
+                <span className="callout-title">SEATS SOLD</span>
+                <span className="callout-sub">
+                  {seatsSold} / {capacity}
+                </span>
               </div>
             )}
           </div>
@@ -268,13 +209,13 @@ export default function OccupancyDonutChart() {
 
                 <div className="row-right">
                   <div className="item-numbers">
-                    <span className="item-percent font-mono">{item.percentage}%</span>
+                    <span className="item-percent font-mono">{item.fill}%</span>
                     <span className="item-seats">
                       {item.occupied}/{item.capacity} Seats
                     </span>
                   </div>
                   <span className="item-gross font-mono font-semibold" style={{ color: item.color }}>
-                    ${item.gross}
+                    {formatLKR(item.gross)}
                   </span>
                 </div>
               </div>
@@ -288,14 +229,18 @@ export default function OccupancyDonutChart() {
         <div className="legend-items">
           <div className="legend-item">
             <CheckCircle2 size={13} className="text-emerald" />
-            <span className="legend-label">Soundstage 01 at 100% Full Capacity</span>
+            <span className="legend-label">
+              {busiest && busiest.fill > 0 ? `Fullest: ${busiest.name} (${busiest.fill}%)` : 'No seats sold today yet'}
+            </span>
           </div>
           <div className="legend-item">
             <Award size={13} className="text-indigo" />
-            <span className="legend-label">Highest Yield: Sovereign Recliner Tier</span>
+            <span className="legend-label">
+              {topEarner && topEarner.gross > 0 ? `Top earner: ${topEarner.name}` : 'Revenue appears as seats sell'}
+            </span>
           </div>
         </div>
-        <span className="legend-helper-text">Hover any suite slice to inspect seat yield</span>
+        <span className="legend-helper-text">Slice size is share of seats sold</span>
       </div>
     </div>
   );

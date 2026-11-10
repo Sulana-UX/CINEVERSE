@@ -16,7 +16,7 @@ export function showStartsAt(dateStr, timeStr) {
   return new Date(Date.UTC(y, m - 1, d, hh, mm) - COLOMBO_OFFSET_MIN * 60 * 1000);
 }
 
-function addDays(dateStr, days) {
+export function addDays(dateStr, days) {
   const [y, m, d] = dateStr.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 }

@@ -5,7 +5,54 @@ import { AlertCircle, Play, Pause } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
+const VIDEO_URL = '/videos/cinema-intro.mp4';
+
+/**
+ * Scroll scrubbing seeks all over the video. Over the internet every seek into
+ * a part that has not downloaded yet stalls, so the whole file is downloaded
+ * into memory first and played from there. Returns the src to use and the
+ * download progress (0–100). If the download fails, the normal URL is used.
+ */
+function useFullyLoadedVideo(url) {
+  const [state, setState] = useState({ src: null, progress: 0 });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let objectUrl = null;
+
+    (async () => {
+      try {
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+        const total = Number(res.headers.get('content-length')) || 0;
+        const reader = res.body.getReader();
+        const chunks = [];
+        let received = 0;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          received += value.length;
+          if (total) setState((s) => ({ ...s, progress: Math.min(99, Math.round((received / total) * 100)) }));
+        }
+        objectUrl = URL.createObjectURL(new Blob(chunks, { type: 'video/mp4' }));
+        setState({ src: objectUrl, progress: 100 });
+      } catch (err) {
+        if (err.name !== 'AbortError') setState({ src: url, progress: 100 });
+      }
+    })();
+
+    return () => {
+      controller.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [url]);
+
+  return state;
+}
+
 export default function CinematicIntro() {
+  const { src: videoSrc, progress: downloadProgress } = useFullyLoadedVideo(VIDEO_URL);
   const containerRef = useRef(null);
   const heroRef = useRef(null);
   const videoRef = useRef(null);
@@ -164,6 +211,10 @@ export default function CinematicIntro() {
       }
     }, container);
 
+    // The pin adds several screens of scroll space after the rest of the page
+    // has set up its own scroll animations, so let them re-measure.
+    ScrollTrigger.refresh();
+
     return () => {
       cancelAnimationFrame(rafId);
       clearTimeout(seekUnlockTimer);
@@ -191,7 +242,9 @@ export default function CinematicIntro() {
       <div ref={heroRef} className="cinematic-hero-pinned">
         <div className={`cinema-loading-overlay ${isVideoLoaded ? 'loaded' : ''}`}>
           <div className="cinema-spinner" />
-          <span className="cinema-loading-text">Preparing Cinema Experience</span>
+          <span className="cinema-loading-text">
+            Preparing Cinema Experience{downloadProgress > 0 && downloadProgress < 100 ? ` · ${downloadProgress}%` : ''}
+          </span>
         </div>
 
         {hasError ? (
@@ -208,7 +261,7 @@ export default function CinematicIntro() {
             <video
               ref={videoRef}
               className="cinema-video"
-              src="/videos/cinema-intro.mp4"
+              src={videoSrc || undefined}
               playsInline
               muted
               preload="auto"

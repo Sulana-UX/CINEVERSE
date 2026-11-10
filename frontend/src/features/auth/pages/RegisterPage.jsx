@@ -4,6 +4,7 @@ import { KeyRound, RefreshCw } from 'lucide-react';
 import AuthLayout from '../components/AuthLayout';
 import AuthForm from '../components/AuthForm';
 import PasswordInput from '../components/PasswordInput';
+import { destinationFor } from '../utils/adminAuth';
 import { useAuth } from '../hooks/useAuth';
 import { validateRegisterForm, PASSWORD_HINT } from '../validation/authValidation';
 import { emailService } from '../../../services/emailService';
@@ -11,7 +12,7 @@ import { emailService } from '../../../services/emailService';
 export default function RegisterPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { register, error: authError, clearError, isAuthenticated } = useAuth();
+  const { register, error: authError, clearError } = useAuth();
 
   // Registration step: 'form' | 'otp'
   const [step, setStep] = useState('form');
@@ -32,13 +33,6 @@ export default function RegisterPage() {
   const [resendTimer, setResendTimer] = useState(60);
 
   const otpInputsRef = useRef([]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      const from = location.state?.from?.pathname || location.state?.from || '/';
-      navigate(from, { replace: true });
-    }
-  }, [isAuthenticated, navigate, location]);
 
   useEffect(() => {
     return () => clearError();
@@ -179,8 +173,7 @@ export default function RegisterPage() {
     setOtpLoading(false);
 
     if (result.success) {
-      const from = location.state?.from?.pathname || location.state?.from || '/';
-      navigate(from, { replace: true });
+      navigate(destinationFor(result.user, location.state?.from), { replace: true });
     } else {
       setOtpError(result.error || 'Failed to complete registration. Please try again.');
     }
@@ -212,7 +205,7 @@ export default function RegisterPage() {
       visualProps={{
         imageSrc: '/images/luxury_cinema_details.jpg',
         imageAlt: 'Crimson Velvet Seating with Brushed Champagne Gold Architectural Trims',
-        badgeText: 'CONCIERGE TIER • PRIVATE LOGE SUITE',
+        badgeText: 'CONCIERGE TIER â€¢ PRIVATE LOGE SUITE',
         eyebrow: 'PRIVATE SANCTUARY',
         heading: 'Crafted for the True Connoisseur.',
         supportingText:
@@ -313,7 +306,7 @@ export default function RegisterPage() {
           {/* Switch to Login */}
           <div className="auth-switch-prompt">
             <span>Already have an active membership?</span>{' '}
-            <Link to="/login" className="auth-link">
+            <Link to="/login" state={location.state} replace className="auth-link">
               Sign In
             </Link>
           </div>

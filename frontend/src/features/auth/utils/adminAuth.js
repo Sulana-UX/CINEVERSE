@@ -11,3 +11,15 @@
 export function isAdminUser(user) {
   return user?.isAdmin === true;
 }
+
+/**
+ * Where a signed-in user goes instead of the login or sign-up page: back to
+ * where they came from, except that guests never go to /admin.
+ */
+export function destinationFor(user, from) {
+  const path = typeof from === 'string' ? from : from?.pathname ? `${from.pathname}${from.search || ''}` : null;
+  const isAdmin = isAdminUser(user);
+  if (!path || path === '/login' || path === '/register') return isAdmin ? '/admin' : '/';
+  if (path.startsWith('/admin') && !isAdmin) return '/';
+  return path;
+}

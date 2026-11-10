@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../lib/supabaseAdmin.js';
+import { env } from '../config/env.js';
 import { sendMail } from './mailer.js';
 import { ticketEmail } from '../templates/ticketEmail.js';
 import { cancellationEmail } from '../templates/cancellationEmail.js';
@@ -29,6 +30,7 @@ export function toClientBooking(row) {
     holdExpiresAt: row.hold_expires_at,
     paidAt: row.paid_at,
     checkedIn: row.checked_in,
+    checkedInAt: row.checked_in_at ?? null,
     createdAt: row.created_at,
     cancelledAt: row.cancelled_at ?? null,
     cancelledBy: row.cancelled_by ?? null,
@@ -66,6 +68,11 @@ function formatShowDate(dateStr) {
   });
 }
 
+/** The page staff open by scanning the ticket's QR code with a phone camera. */
+export function checkInUrl(refCode) {
+  return `${env.frontendUrl}/admin/check-in/${encodeURIComponent(refCode)}`;
+}
+
 async function sendTicket(row) {
   const { subject, html } = ticketEmail({
     refCode: row.ref_code,
@@ -79,6 +86,7 @@ async function sendTicket(row) {
     addons: row.addons,
     totalAmount: row.total_amount,
     currency: row.currency,
+    checkInUrl: checkInUrl(row.ref_code),
   });
   const result = await sendMail({ to: row.guest_email, subject, html });
   if (!result.sent) console.warn(`[booking] ticket email for ${row.ref_code} not sent:`, result.error);

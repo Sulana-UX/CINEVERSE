@@ -14,6 +14,7 @@ import {
   Armchair,
   Ban,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { formatLKR } from '../../../utils/currency';
 
 export default function AdminBookingsTab({ bookings = [], onToggleCheckIn, onCancelBooking }) {
@@ -283,6 +284,13 @@ export default function AdminBookingsTab({ bookings = [], onToggleCheckIn, onCan
       </div>
 
       {/* 2. Controls & Search Filter Bar */}
+      <div className="bookings-door-row">
+        <Link to="/admin/check-in" className="bookings-door-link">
+          <UserCheck size={16} />
+          <span>Door check-in</span>
+        </Link>
+        <span className="bookings-door-hint">Or scan a guest’s ticket QR code with your phone camera.</span>
+      </div>
       <div className="bookings-controls-bar">
         {/* Search */}
         <div className="admin-search-wrap bookings-search-box">

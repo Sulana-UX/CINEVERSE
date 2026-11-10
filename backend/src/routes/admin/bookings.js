@@ -3,6 +3,7 @@ import { supabaseAdmin } from '../../lib/supabaseAdmin.js';
 import {
   CancellationError,
   cancelPaidBooking,
+  findBookingByRef,
   toClientBooking,
   toOwnerBooking,
 } from '../../services/bookingService.js';
@@ -40,6 +41,24 @@ router.get('/refunds', async (_req, res, next) => {
       .limit(200);
     if (error) throw error;
     return res.json({ refunds: data.map(toClientBooking) });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /api/admin/bookings/by-ref/:ref: one booking by its reference (any status),
+ * for the door check-in page that opens when staff scan a ticket's QR code.
+ */
+router.get('/by-ref/:ref', async (req, res, next) => {
+  try {
+    const ref = String(req.params.ref || '').trim().toUpperCase();
+    if (!/^CV-[A-Z0-9]{4,16}$/.test(ref)) {
+      return res.status(400).json({ error: 'That is not a CINEVERSE booking reference (it looks like CV-XXXXXXXX).' });
+    }
+    const row = await findBookingByRef(ref);
+    if (!row) return res.status(404).json({ error: `No booking found for ${ref}.` });
+    return res.json({ booking: toOwnerBooking(row) });
   } catch (err) {
     return next(err);
   }

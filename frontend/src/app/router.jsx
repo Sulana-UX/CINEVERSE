@@ -8,6 +8,7 @@ import BookingConfirmationPage from '../features/booking/pages/BookingConfirmati
 import DemoCheckoutPage from '../features/booking/pages/DemoCheckoutPage';
 import MyBookingsPage from '../features/booking/pages/MyBookingsPage';
 import AdminFilmsPage from '../features/admin/pages/AdminFilmsPage';
+import AdminCheckInPage from '../features/admin/pages/AdminCheckInPage';
 import AdminRoute from '../features/auth/components/AdminRoute';
 import GuestRoute from '../features/auth/components/GuestRoute';
 
@@ -41,6 +42,10 @@ export function AppRouter() {
             </AdminRoute>
           }
         />
+
+        {/* Door check-in: the e-ticket QR code opens /admin/check-in/CV-XXXXXXXX */}
+        <Route path="/admin/check-in" element={<AdminRoute><AdminCheckInPage /></AdminRoute>} />
+        <Route path="/admin/check-in/:ref" element={<AdminRoute><AdminCheckInPage /></AdminRoute>} />
 
         {/* Authentication Routes */}
         <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />

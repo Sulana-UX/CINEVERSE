@@ -66,6 +66,16 @@ describe('password reset', () => {
   });
 });
 
+describe('ticket QR code', () => {
+  it('opens the staff check-in page for that booking', async () => {
+    const { checkInUrl } = await import('../src/services/bookingService.js');
+    const url = checkInUrl('CV-7KQ2M9XA');
+    assert.match(url, /\/admin\/check-in\/CV-7KQ2M9XA$/);
+    const { html } = ticketEmail({ refCode: 'CV-7KQ2M9XA', checkInUrl: url, movie: {}, seats: ['A1'], date: 'x', time: '18:00' });
+    assert.ok(html.includes(encodeURIComponent(url)), 'QR image encodes the check-in link');
+  });
+});
+
 describe('emails', () => {
   it('escapes guest-supplied text', () => {
     assert.equal(escapeHtml('<b>"x"</b>'), '&lt;b&gt;&quot;x&quot;&lt;/b&gt;');

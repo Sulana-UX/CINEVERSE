@@ -1,0 +1,22 @@
+{
+  "name": "cineverse-backend",
+  "private": true,
+  "version": "1.0.0",
+  "description": "CINEVERSE API: OTP verification, ticket emails and signed Cloudinary uploads",
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=22.9"
+  },
+  "scripts": {
+    "dev": "node --watch --env-file-if-exists=.env src/server.js",
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "create-admin": "node --env-file-if-exists=.env scripts/create-admin.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "nodemailer": "^10.1.7"
+  }
+}

@@ -244,7 +244,7 @@ Verification codes are kept in the API's memory, so they are lost when the serve
 | Name | Role |
 | --- | --- |
 | [Sulana Uduwana](https://github.com/Sulana-UX) | Developer |
-| Indeewari Upamalika | Developer |
+| [Indeewari Upamalika](https://github.com/Indeewari04) | Developer |
 
 <div align="center">
 Made by Sulana Uduwana and Indeewari Upamalika

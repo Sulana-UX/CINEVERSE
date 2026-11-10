@@ -21,6 +21,48 @@ router.get('/', async (_req, res, next) => {
   }
 });
 
+/** GET /api/admin/bookings/refunds: money owed to guests, plus refunds paid in the last 30 days. */
+router.get('/refunds', async (_req, res, next) => {
+  try {
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const { data, error } = await supabaseAdmin
+      .from('bookings')
+      .select('*')
+      .or(`refund_status.eq.pending,and(refund_status.eq.refunded,refunded_at.gte.${since})`)
+      .order('updated_at', { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    return res.json({ refunds: data.map(toClientBooking) });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/** POST /api/admin/bookings/:id/refund  { reference? }: staff paid the refund back. */
+router.post('/:id/refund', async (req, res, next) => {
+  try {
+    const reference = typeof req.body?.reference === 'string' ? req.body.reference.trim().slice(0, 120) : '';
+    const { data, error } = await supabaseAdmin
+      .from('bookings')
+      .update({
+        refund_status: 'refunded',
+        refunded_at: new Date().toISOString(),
+        refund_reference: reference || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', req.params.id)
+      .eq('refund_status', 'pending')
+      .select('*')
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'No pending refund for this booking.' });
+    console.info(`[admin] refund for ${data.ref_code} marked paid by ${req.user.id}`);
+    return res.json({ booking: toClientBooking(data) });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 /** POST /api/admin/bookings/:id/check-in  { checkedIn: boolean } */
 router.post('/:id/check-in', async (req, res, next) => {
   try {

@@ -21,8 +21,28 @@ export const bookingApi = {
     return booking;
   },
 
+  /** Release an unpaid seat hold. */
   async cancelBooking(ref) {
     const { booking } = await apiPost(`/api/booking/${encodeURIComponent(ref)}/cancel`, {}, { auth: true });
+    return booking;
+  },
+
+  /** The signed-in guest's paid bookings (including cancelled ones). */
+  async getMyBookings() {
+    const { bookings } = await apiGet('/api/booking/mine', { auth: true });
+    return bookings;
+  },
+
+  /**
+   * Cancel a paid booking. `expectedRefund` is the amount shown to the guest;
+   * if the refund has changed since, the server refuses with code REFUND_CHANGED.
+   */
+  async cancelPaidBooking(ref, expectedRefund) {
+    const { booking } = await apiPost(
+      `/api/booking/${encodeURIComponent(ref)}/cancel`,
+      { expectedRefund },
+      { auth: true }
+    );
     return booking;
   },
 

@@ -39,3 +39,15 @@ export const adminBookingsApi = {
     return toAdminBooking(booking);
   },
 };
+
+/** Money owed back to guests, and refunds paid in the last 30 days. */
+export const adminRefundsApi = {
+  async list() {
+    const { refunds } = await apiGet('/api/admin/bookings/refunds', { auth: true });
+    return refunds;
+  },
+  async markRefunded(id, reference) {
+    const { booking } = await apiPost(`/api/admin/bookings/${id}/refund`, { reference }, { auth: true });
+    return booking;
+  },
+};

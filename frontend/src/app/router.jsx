@@ -6,6 +6,7 @@ import RegisterPage from '../features/auth/pages/RegisterPage';
 import BookingPage from '../features/booking/pages/BookingPage';
 import BookingConfirmationPage from '../features/booking/pages/BookingConfirmationPage';
 import DemoCheckoutPage from '../features/booking/pages/DemoCheckoutPage';
+import MyBookingsPage from '../features/booking/pages/MyBookingsPage';
 import AdminFilmsPage from '../features/admin/pages/AdminFilmsPage';
 import AdminRoute from '../features/auth/components/AdminRoute';
 
@@ -20,6 +21,7 @@ export function AppRouter() {
         <Route path="/booking" element={<BookingPage />} />
         <Route path="/booking/checkout/demo" element={<DemoCheckoutPage />} />
         <Route path="/booking/confirmation" element={<BookingConfirmationPage />} />
+        <Route path="/my-bookings" element={<MyBookingsPage />} />
 
         {/* Protected Admin Concierge & Film Upload Portal */}
         <Route

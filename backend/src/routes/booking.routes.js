@@ -16,7 +16,15 @@ import { supabaseAdmin } from '../lib/supabaseAdmin.js';
 import { isAdmin, requireUser } from '../middleware/auth.js';
 import { QuoteError, buildQuote } from '../services/pricing.js';
 import { activeProvider, createCheckout } from '../services/payments/index.js';
-import { findBookingByRef, releaseBooking, toClientBooking } from '../services/bookingService.js';
+import {
+  CancellationError,
+  cancelPaidBooking,
+  findBookingByRef,
+  releaseBooking,
+  toClientBooking,
+  toOwnerBooking,
+} from '../services/bookingService.js';
+import { describeCancellationRules } from '../services/cancellation.js';
 import { colomboToday, validateShowSlot } from '../utils/showtime.js';
 
 const router = Router();
@@ -67,6 +75,7 @@ router.get('/config', (_req, res) => {
     layout: SEAT_LAYOUT,
     extras: EXTRAS,
     paymentProvider: activeProvider(),
+    cancellationRules: describeCancellationRules(),
   });
 });
 
@@ -183,18 +192,25 @@ async function loadOwnedBooking(req, res) {
   return row;
 }
 
-/** GET /api/booking/mine  (signed-in): the patron's recent bookings. */
+/**
+ * GET /api/booking/mine  (signed-in): the patron's paid bookings, including
+ * ones they cancelled, newest screening first. Unpaid holds are left out.
+ */
 router.get('/mine', requireDb, requireUser, async (req, res, next) => {
   try {
     const { data, error } = await supabaseAdmin
       .from('bookings')
       .select('*')
       .eq('user_id', req.user.id)
-      .in('status', ['confirmed', 'refund_required'])
-      .order('created_at', { ascending: false })
-      .limit(20);
+      .in('status', ['confirmed', 'refund_required', 'cancelled'])
+      .not('paid_at', 'is', null)
+      .order('show_date', { ascending: false })
+      .order('show_time', { ascending: false })
+      .limit(100);
     if (error) throw error;
-    return res.json({ bookings: data.map(toClientBooking) });
+    const now = new Date();
+    res.set('Cache-Control', 'no-store');
+    return res.json({ bookings: data.map((row) => toOwnerBooking(row, now)) });
   } catch (err) {
     return next(err);
   }
@@ -207,23 +223,45 @@ router.get('/:ref', requireDb, requireUser, async (req, res, next) => {
     const row = await loadOwnedBooking(req, res);
     if (!row) return undefined;
     res.set('Cache-Control', 'no-store');
-    return res.json({ booking: toClientBooking(row) });
+    return res.json({ booking: toOwnerBooking(row) });
   } catch (err) {
     return next(err);
   }
 });
 
-/** POST /api/booking/:ref/cancel  (owner): give up an unpaid hold. */
+/**
+ * POST /api/booking/:ref/cancel  (owner)
+ * - Unpaid hold: release it (no body needed).
+ * - Paid booking: cancel under the refund rules. Body { expectedRefund } must
+ *   match the refund the guest was shown, so they never get a surprise.
+ */
 router.post('/:ref/cancel', requireDb, requireUser, async (req, res, next) => {
   try {
     const row = await loadOwnedBooking(req, res);
     if (!row) return undefined;
-    if (row.status !== 'pending') {
-      return res.json({ booking: toClientBooking(row) });
+
+    if (row.status === 'pending') {
+      const updated = await releaseBooking(row, 'cancelled');
+      return res.json({ booking: toOwnerBooking(updated) });
     }
-    const updated = await releaseBooking(row, 'cancelled');
-    return res.json({ booking: toClientBooking(updated) });
+    if (row.status !== 'confirmed') {
+      return res.json({ booking: toOwnerBooking(row) });
+    }
+    // Only the guest who paid may cancel; staff use the admin tools.
+    if (row.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Only the guest who made this booking can cancel it.' });
+    }
+
+    const expectedRefund = req.body?.expectedRefund;
+    if (!Number.isInteger(expectedRefund)) {
+      return res.status(400).json({ error: 'Please confirm the refund amount before cancelling.' });
+    }
+    const cancelled = await cancelPaidBooking(row, { by: 'guest', expectedRefund });
+    return res.json({ booking: toOwnerBooking(cancelled) });
   } catch (err) {
+    if (err instanceof CancellationError) {
+      return res.status(409).json({ error: err.message, code: err.code, cancellation: err.quote });
+    }
     return next(err);
   }
 });

@@ -87,7 +87,7 @@ export default function BookingConfirmationPage() {
             </div>
             <TicketPass booking={booking} />
             <div className="bk-result-actions bk-no-print">
-              <Link to="/" className="bk-ghost-btn">Back to home</Link>
+              <Link to="/my-bookings" className="bk-ghost-btn">My bookings</Link>
               <Link to="/booking" className="bk-primary-btn">Book more seats</Link>
             </div>
           </>
@@ -119,6 +119,27 @@ export default function BookingConfirmationPage() {
             </div>
           </div>
         );
+      case 'cancelled':
+        if (booking.paidAt) {
+          // A paid booking the guest cancelled later (from My Bookings).
+          return (
+            <div className="bk-result is-pending">
+              <XCircle size={26} />
+              <div>
+                <h1>This booking was cancelled</h1>
+                <p>
+                  {booking.refundAmount > 0
+                    ? `A refund of Rs. ${Number(booking.refundAmount).toLocaleString('en-LK')} ${
+                        booking.refundStatus === 'refunded' ? 'has been paid' : 'is on its way'
+                      }.`
+                    : 'No refund was due for this cancellation.'}
+                </p>
+                <Link to="/my-bookings" className="bk-primary-btn">My bookings</Link>
+              </div>
+            </div>
+          );
+        }
+      // falls through: an unpaid hold that was cancelled
       default: {
         const messages = {
           cancelled: 'Payment was cancelled, so your seats were released. You have not been charged.',

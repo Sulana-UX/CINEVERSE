@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, LogOut, ChevronDown, Ticket, Shield } from 'lucide-react';
+import { Menu, X, LogOut, ChevronDown, Ticket, Shield, CalendarCheck } from 'lucide-react';
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { isAdminUser } from '../../features/auth/utils/adminAuth';
 
@@ -182,6 +182,14 @@ export default function Navbar() {
                       >
                         <Ticket size={15} /> Reserve seats
                       </Link>
+                      <Link
+                        to="/my-bookings"
+                        className="nav-account-item"
+                        role="menuitem"
+                        onClick={() => setAccountOpen(false)}
+                      >
+                        <CalendarCheck size={15} /> My bookings
+                      </Link>
                       {isAdminUser(user) && (
                         <Link
                           to="/admin"
@@ -280,6 +288,13 @@ export default function Navbar() {
               Reserve Seats
             </Link>
           </li>
+          {isAuthenticated && (
+            <li>
+              <Link to="/my-bookings" className="nav-link" onClick={() => setMobileMenuOpen(false)}>
+                My Bookings
+              </Link>
+            </li>
+          )}
           {/* Admin Portal Mobile Link */}
           {isAuthenticated && isAdminUser(user) && (
             <li>

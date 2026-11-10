@@ -95,3 +95,14 @@ export function getExtra(extraId) {
 }
 
 export const TOTAL_SEATS = seatIndex.size;
+
+/**
+ * Cancelling a PAID booking. Rules are checked in order; the first one whose
+ * `minHoursBefore` the guest still meets decides the refund. Closer to the show
+ * than the last rule, the booking can no longer be cancelled.
+ * Checked-in bookings can never be cancelled.
+ */
+export const CANCELLATION_RULES = [
+  { minHoursBefore: 24, refundPercent: 100 },
+  { minHoursBefore: 2, refundPercent: 50 },
+];

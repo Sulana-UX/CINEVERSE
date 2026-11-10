@@ -5585,3 +5585,52 @@
   justify-content: center;
   gap: 0.5rem;
 }
+
+/* ---- Refunds panel ---- */
+.refunds-panel {
+  margin-bottom: 1.5rem;
+}
+
+.refunds-sub {
+  margin-top: 2px;
+  font-size: 0.72rem;
+  color: var(--adm-text-muted, #8a8678);
+}
+
+.refunds-tag-owed {
+  color: #f6c177;
+  border-color: rgba(246, 193, 119, 0.4);
+}
+
+.refunds-mark-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  border-radius: 8px;
+  background: rgba(212, 175, 55, 0.1);
+  color: #f3e5ab;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.refunds-mark-btn:hover:not(:disabled) {
+  background: rgba(212, 175, 55, 0.2);
+}
+
+.refunds-mark-btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.refunds-error {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  color: #f2a7a7;
+  font-size: 0.85rem;
+}

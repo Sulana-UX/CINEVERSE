@@ -105,6 +105,7 @@ In the Supabase dashboard, open **SQL Editor > New query**, then paste and run e
 1. `backend/supabase/migrations/001_admin_users.sql`
 2. `backend/supabase/migrations/002_bookings.sql`
 3. `backend/supabase/migrations/003_admin_dashboard.sql`
+4. `backend/supabase/migrations/004_cancellations.sql`
 
 ### 5. Create an admin account
 
@@ -188,7 +189,19 @@ Choose film and time ─▶ Pick seats ─▶ Add extras ─▶ Pay ─▶ Confi
 | Premier Velvet Recliner | D to F | Rs. 3,500 |
 | Royal Sovereign Loge | G to H | Rs. 5,000 |
 
-Prices, the seat layout, extras, the 8-seat limit and the 10-minute hold can all be changed in `backend/src/config/booking.js`.
+### My Bookings and cancellations
+
+Signed-in guests see their tickets at `/my-bookings` (Upcoming, Past and Cancelled). A paid booking can be cancelled there:
+
+| When the guest cancels | Refund |
+| --- | --- |
+| More than 24 hours before the screening | 100% |
+| Between 24 and 2 hours before | 50% |
+| Less than 2 hours before, or after door check-in | Cannot cancel |
+
+Cancelling frees the seats straight away and emails the guest. The refund is recorded as *pending*. Staff pay it back in the payment provider's portal, then press **Mark refunded** in the admin dashboard (Guest Reservations tab). Demo payments are marked refunded automatically because no money moved.
+
+Prices, the seat layout, extras, the 8-seat limit, the 10-minute hold and the cancellation rules (`CANCELLATION_RULES`) can all be changed in `backend/src/config/booking.js`.
 
 ### Payment providers
 
@@ -214,13 +227,15 @@ Prices, the seat layout, extras, the 8-seat limit and the 10-minute hold can all
 | GET | `/api/booking/config` | | Seat layout, prices, extras and rules |
 | GET | `/api/booking/availability` | `?movieId&date&time` | Taken seats for one show |
 | POST | `/api/booking/holds` | `{ movieId, date, time, seats, addons }` | Hold seats and start checkout (signed in) |
-| GET | `/api/booking/mine` | | The signed-in user's bookings |
+| GET | `/api/booking/mine` | | The signed-in guest's paid bookings, with what a cancellation would refund |
 | GET | `/api/booking/:ref` | | One booking (owner or admin) |
-| POST | `/api/booking/:ref/cancel` | | Release an unpaid hold |
+| POST | `/api/booking/:ref/cancel` | `{ expectedRefund }` for paid bookings | Release an unpaid hold, or cancel a paid booking under the refund rules |
 | POST | `/api/payments/payhere/notify` | PayHere form post | Payment result from PayHere |
 | GET | `/api/admin/stats` | | Overview numbers and charts (admin) |
 | GET | `/api/admin/bookings` | | Paid bookings (admin) |
 | POST | `/api/admin/bookings/:id/check-in` | `{ checkedIn }` | Door check-in (admin) |
+| GET | `/api/admin/bookings/refunds` | | Refunds owed, and those paid in the last 30 days (admin) |
+| POST | `/api/admin/bookings/:id/refund` | `{ reference }` | Mark a refund as paid (admin) |
 | GET / POST | `/api/admin/movies` | film fields | List films / add a film (admin) |
 | PUT / DELETE | `/api/admin/movies/:id` | film fields | Edit / remove a film (admin) |
 | GET | `/api/admin/auditoriums` | | Halls with what is playing now (admin) |

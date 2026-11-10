@@ -15,6 +15,7 @@ import {
   validateNewPassword,
   validateRegisterForm,
 } from '../features/auth/validation/authValidation';
+import { destinationFor } from '../features/auth/utils/adminAuth';
 
 describe('money', () => {
   it('formats rupees without decimals', () => {
@@ -89,6 +90,18 @@ describe('auth forms', () => {
   it('only needs a password to sign in, so older accounts still work', () => {
     expect(validateLoginForm({ email: 'a@b.co', password: 'abc' }).isValid).toBe(true);
     expect(validateLoginForm({ email: 'a@b.co', password: '' }).errors.password).toMatch(/required/);
+  });
+
+  it('sends signed-in users past the login page to the right place', () => {
+    const guest = { isAdmin: false };
+    const admin = { isAdmin: true };
+    expect(destinationFor(guest, undefined)).toBe('/');
+    expect(destinationFor(admin, undefined)).toBe('/admin');
+    expect(destinationFor(guest, { pathname: '/admin' })).toBe('/');
+    expect(destinationFor(admin, { pathname: '/admin/movies' })).toBe('/admin/movies');
+    expect(destinationFor(guest, '/my-bookings')).toBe('/my-bookings');
+    expect(destinationFor(guest, { pathname: '/booking', search: '?movie=7' })).toBe('/booking?movie=7');
+    expect(destinationFor(guest, '/login')).toBe('/');
   });
 
   it('checks the whole sign-up form', () => {

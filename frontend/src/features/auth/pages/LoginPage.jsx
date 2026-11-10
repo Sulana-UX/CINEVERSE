@@ -5,14 +5,14 @@ import { KeyRound, CheckCircle2, X } from 'lucide-react';
 import AuthLayout from '../components/AuthLayout';
 import AuthForm from '../components/AuthForm';
 import PasswordInput from '../components/PasswordInput';
+import { destinationFor } from '../utils/adminAuth';
 import { useAuth } from '../hooks/useAuth';
 import { validateLoginForm } from '../validation/authValidation';
-import { isAdminUser } from '../utils/adminAuth';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, resetPassword, loading, error: authError, clearError, isAuthenticated, user, logout } = useAuth();
+  const { login, resetPassword, loading, error: authError, clearError } = useAuth();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -28,25 +28,7 @@ export default function LoginPage() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotStatus, setForgotStatus] = useState(null); // { type: 'success' | 'error', message: string }
 
-  // If already authenticated, redirect to destination, but stay on login if admin access is required
-  useEffect(() => {
-    if (isAuthenticated) {
-      if (isAdminUser(user)) {
-        const from = location.state?.from?.pathname || location.state?.from || '/admin';
-        navigate(from, { replace: true });
-      } else {
-        // If admin access is required, do NOT redirect back to /admin or home!
-        if (location.state?.adminRequired) {
-          return;
-        }
-        const from = location.state?.from?.pathname || location.state?.from || '/';
-        if (from === '/admin' || from.startsWith('/admin')) {
-          return;
-        }
-        navigate(from, { replace: true });
-      }
-    }
-  }, [isAuthenticated, user, navigate, location]);
+  // Signed-in visitors never see this page: GuestRoute sends them on.
 
   // Clear auth errors when component unmounts or inputs change
   useEffect(() => {
@@ -89,13 +71,7 @@ export default function LoginPage() {
     });
 
     if (result.success) {
-      if (isAdminUser(result.user)) {
-        const from = location.state?.from?.pathname || location.state?.from || '/admin';
-        navigate(from, { replace: true });
-      } else {
-        const from = location.state?.from?.pathname || location.state?.from || '/';
-        navigate(from, { replace: true });
-      }
+      navigate(destinationFor(result.user, location.state?.from), { replace: true });
     }
   };
 
@@ -141,7 +117,7 @@ export default function LoginPage() {
       visualProps={{
         imageSrc: '/images/luxury_cinema_interior.jpg',
         imageAlt: 'CINEVERSE Grand Auditorium with Crimson Velvet Recliners and Golden Lighting',
-        badgeText: 'AUDITORIUM NO. 01 • PRIVATE SCREENING SUITE',
+        badgeText: 'AUDITORIUM NO. 01 â€¢ PRIVATE SCREENING SUITE',
         eyebrow: 'THE ART OF CINEMA',
         heading: 'Where Every Frame Feels Extraordinary.',
         supportingText:
@@ -149,48 +125,6 @@ export default function LoginPage() {
         specs: ['70MM DUAL LASER', 'DOLBY ATMOS SOUNDSTAGE', 'BESPOKE CONCIERGE'],
       }}
     >
-      {isAuthenticated && !isAdminUser(user) && (
-        <div
-          className="auth-alert-banner"
-          role="alert"
-          style={{
-            marginBottom: '1.25rem',
-            background: 'rgba(212, 175, 55, 0.08)',
-            borderColor: 'rgba(212, 175, 55, 0.3)',
-            color: '#F3E5AB',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '0.75rem',
-            padding: '0.75rem 1rem',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem' }}>
-            <span style={{ color: '#D4AF37' }}>✦</span>
-            <span>
-              Signed in as <strong>{user?.user_metadata?.full_name || user?.email}</strong> (Patron).
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={logout}
-            style={{
-              background: 'transparent',
-              border: '1px solid #D4AF37',
-              color: '#D4AF37',
-              padding: '3px 8px',
-              fontSize: '0.68rem',
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              borderRadius: '2px',
-            }}
-          >
-            Sign Out
-          </button>
-        </div>
-      )}
-
       {(location.state?.adminRequired || location.state?.message) && (
         <div
           className="auth-alert-banner"
@@ -202,7 +136,7 @@ export default function LoginPage() {
             color: '#F3E5AB',
           }}
         >
-          <span className="auth-alert-icon" style={{ color: '#D4AF37' }}>✦</span>
+          <span className="auth-alert-icon" style={{ color: '#D4AF37' }}>âœ¦</span>
           <span>
             {location.state?.message || 'Admin privileges required. Sign in with administrator credentials.'}
           </span>
@@ -258,7 +192,7 @@ export default function LoginPage() {
             name="password"
             value={formData.password}
             onChange={handleChange}
-            placeholder="••••••••"
+            placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
             required
             error={fieldErrors.password}
             autoComplete="current-password"
@@ -284,7 +218,7 @@ export default function LoginPage() {
       {/* Switch to Registration */}
       <div className="auth-switch-prompt">
         <span>Not yet an invited member?</span>{' '}
-        <Link to="/register" className="auth-link">
+        <Link to="/register" state={location.state} replace className="auth-link">
           Create Account
         </Link>
       </div>

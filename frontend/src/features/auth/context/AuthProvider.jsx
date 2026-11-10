@@ -6,6 +6,9 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  // True only until the saved session has been checked once; `loading` also
+  // covers login/logout requests, which must not hide the page.
+  const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -25,6 +28,7 @@ export function AuthProvider({ children }) {
       } finally {
         if (isMounted) {
           setLoading(false);
+          setInitializing(false);
         }
       }
     }
@@ -36,6 +40,7 @@ export function AuthProvider({ children }) {
         setSession(currentSession);
         setUser(currentSession?.user || null);
         setLoading(false);
+        setInitializing(false);
       }
     });
 
@@ -129,6 +134,7 @@ export function AuthProvider({ children }) {
     user,
     session,
     loading,
+    initializing,
     error,
     login,
     register,

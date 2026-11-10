@@ -9,6 +9,7 @@ import DemoCheckoutPage from '../features/booking/pages/DemoCheckoutPage';
 import MyBookingsPage from '../features/booking/pages/MyBookingsPage';
 import AdminFilmsPage from '../features/admin/pages/AdminFilmsPage';
 import AdminRoute from '../features/auth/components/AdminRoute';
+import GuestRoute from '../features/auth/components/GuestRoute';
 
 export function AppRouter() {
   return (
@@ -42,8 +43,8 @@ export function AppRouter() {
         />
 
         {/* Authentication Routes */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+        <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
 
         {/* Catch-all Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

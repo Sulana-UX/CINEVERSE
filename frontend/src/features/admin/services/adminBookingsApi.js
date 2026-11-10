@@ -26,6 +26,8 @@ function toAdminBooking(b) {
     status: b.status === 'refund_required' ? 'Refund required' : 'Confirmed',
     checkedIn: b.checkedIn,
     bookedAt: b.createdAt,
+    rawStatus: b.status,
+    cancellation: b.cancellation || null,
   };
 }
 
@@ -33,6 +35,12 @@ export const adminBookingsApi = {
   async list() {
     const { bookings } = await apiGet('/api/admin/bookings', { auth: true });
     return bookings.map(toAdminBooking);
+  },
+
+  /** Staff cancel. refund: 'policy' | 'full' | 'none'. Returns the cancelled booking (API shape). */
+  async cancel(dbId, refund, reason) {
+    const { booking } = await apiPost(`/api/admin/bookings/${dbId}/cancel`, { refund, reason }, { auth: true });
+    return booking;
   },
 
   async setCheckIn(dbId, checkedIn) {

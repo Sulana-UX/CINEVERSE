@@ -1,6 +1,11 @@
 import { Router } from 'express';
 import { supabaseAdmin } from '../../lib/supabaseAdmin.js';
-import { toClientBooking } from '../../services/bookingService.js';
+import {
+  CancellationError,
+  cancelPaidBooking,
+  toClientBooking,
+  toOwnerBooking,
+} from '../../services/bookingService.js';
 
 const router = Router();
 
@@ -15,7 +20,9 @@ router.get('/', async (_req, res, next) => {
       .order('show_time', { ascending: false })
       .limit(500);
     if (error) throw error;
-    return res.json({ bookings: data.map(toClientBooking) });
+    // Include what the guest rules would refund now, for the staff cancel dialog.
+    const now = new Date();
+    return res.json({ bookings: data.map((row) => toOwnerBooking(row, now)) });
   } catch (err) {
     return next(err);
   }
@@ -63,6 +70,41 @@ router.post('/:id/refund', async (req, res, next) => {
   }
 });
 
+/**
+ * POST /api/admin/bookings/:id/cancel  { refund: 'policy'|'full'|'none', reason }
+ * Staff cancel a paid booking for a guest (e.g. over the phone). Staff can do this
+ * at any time before door check-in, and choose the refund:
+ *   policy: what the guest would get by cancelling themselves now (0 inside 2 hours)
+ *   full:   everything back (e.g. the cinema cancelled the screening)
+ *   none:   nothing back
+ */
+router.post('/:id/cancel', async (req, res, next) => {
+  try {
+    const choice = req.body?.refund;
+    if (!['policy', 'full', 'none'].includes(choice)) {
+      return res.status(400).json({ error: 'Choose a refund option.' });
+    }
+    const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
+    if (reason.length < 3 || reason.length > 300) {
+      return res.status(400).json({ error: 'Add a short reason (3 to 300 characters). The guest sees it in their email.' });
+    }
+
+    const { data: row, error } = await supabaseAdmin.from('bookings').select('*').eq('id', req.params.id).maybeSingle();
+    if (error) throw error;
+    if (!row) return res.status(404).json({ error: 'Booking not found.' });
+
+    const policy = toOwnerBooking(row).cancellation;
+    const refundAmount = choice === 'full' ? row.total_amount : choice === 'none' ? 0 : policy.allowed ? policy.refundAmount : 0;
+
+    const cancelled = await cancelPaidBooking(row, { by: 'staff', refundAmount, reason });
+    console.info(`[admin] ${cancelled.ref_code} cancelled by ${req.user.id}, refund ${refundAmount} (${choice})`);
+    return res.json({ booking: toClientBooking(cancelled) });
+  } catch (err) {
+    if (err instanceof CancellationError) return res.status(409).json({ error: err.message, code: err.code });
+    return next(err);
+  }
+});
+
 /** POST /api/admin/bookings/:id/check-in  { checkedIn: boolean } */
 router.post('/:id/check-in', async (req, res, next) => {
   try {
@@ -80,7 +122,7 @@ router.post('/:id/check-in', async (req, res, next) => {
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Confirmed booking not found.' });
-    return res.json({ booking: toClientBooking(data) });
+    return res.json({ booking: toOwnerBooking(data) });
   } catch (err) {
     return next(err);
   }

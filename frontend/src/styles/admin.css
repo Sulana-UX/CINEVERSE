@@ -5634,3 +5634,222 @@
   color: #f2a7a7;
   font-size: 0.85rem;
 }
+
+/* ---- Staff cancel ---- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.booking-cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 8px;
+  background: transparent;
+  color: #f2a7a7;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.booking-cancel-btn:hover {
+  background: rgba(248, 113, 113, 0.1);
+  border-color: rgba(248, 113, 113, 0.6);
+}
+
+.admin-cancel-card {
+  max-width: 560px;
+}
+
+.cancel-refund-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  border: none;
+}
+
+.cancel-refund-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--adm-border, rgba(212, 175, 55, 0.18));
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.cancel-refund-option.is-selected {
+  border-color: rgba(212, 175, 55, 0.6);
+  background: rgba(212, 175, 55, 0.07);
+}
+
+.cancel-refund-option input {
+  accent-color: #d4af37;
+}
+
+.cancel-refund-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cancel-refund-label {
+  font-weight: 600;
+  font-size: 0.86rem;
+  color: var(--adm-text, #f5f1e8);
+}
+
+.cancel-refund-note {
+  font-size: 0.74rem;
+  color: var(--adm-text-muted, #8a8678);
+}
+
+.cancel-refund-amount {
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  color: #f3e5ab;
+  white-space: nowrap;
+}
+
+.cancel-effects {
+  margin: 0 0 1rem;
+  font-size: 0.78rem;
+  color: var(--adm-text-muted, #8a8678);
+}
+
+.admin-submit-btn.admin-danger-btn {
+  background: linear-gradient(135deg, #b4232f, #8b1a24);
+  border-color: rgba(248, 113, 113, 0.5);
+  color: #fff;
+}
+
+/* ---- Bookings table: actions + tier chips ---- */
+.booking-row-actions {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+
+.booking-row-actions .booking-cancel-btn {
+  justify-content: center;
+}
+
+.tier-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.tier-tag {
+  white-space: nowrap;
+}
+
+/* ---- Staff cancel dialog ---- */
+.cancel-dialog-header {
+  padding-right: 3.5rem;
+  padding-bottom: 1rem;
+}
+
+.cancel-dialog-ref {
+  display: inline-block;
+  margin-bottom: 0.35rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: #d4af37;
+}
+
+.cancel-dialog-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem 1.25rem;
+  margin: 0.9rem 0 0;
+}
+
+.cancel-dialog-facts dt {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--adm-text-muted, #8a8678);
+}
+
+.cancel-dialog-facts dd {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  color: var(--adm-text, #f5f1e8);
+  overflow-wrap: anywhere;
+}
+
+.cancel-dialog-body {
+  gap: 1rem;
+}
+
+.cancel-dialog-body .cancel-refund-options,
+.cancel-dialog-body .cancel-effects {
+  margin: 0;
+}
+
+.cancel-dialog-total {
+  display: flex;
+  flex-direction: column;
+  margin-right: auto;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--adm-text-muted, #8a8678);
+}
+
+.cancel-dialog-total strong {
+  font-family: var(--font-mono, monospace);
+  font-size: 1.15rem;
+  color: #f3e5ab;
+}
+
+.cancel-dialog-actions {
+  margin-top: 0;
+}
+
+@media (max-width: 560px) {
+  .cancel-dialog-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .cancel-refund-option {
+    align-items: flex-start;
+  }
+
+  .cancel-dialog-actions {
+    flex-wrap: wrap;
+  }
+
+  .cancel-dialog-total {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
+    width: 100%;
+    margin: 0 0 0.25rem;
+  }
+
+  .cancel-dialog-actions > button {
+    flex: 1;
+    padding-inline: 0.75rem;
+    white-space: nowrap;
+  }
+}

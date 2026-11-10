@@ -26,6 +26,7 @@ import AdminAuditoriumsTab from '../components/AdminAuditoriumsTab';
 import AdminConciergeTab from '../components/AdminConciergeTab';
 import TabErrorBoundary from '../components/TabErrorBoundary';
 import AdminRefundsPanel from '../components/AdminRefundsPanel';
+import AdminCancelBookingDialog from '../components/AdminCancelBookingDialog';
 
 const DEFAULT_FORMATS = [
   '70MM DUAL LASER • DOLBY ATMOS',
@@ -132,6 +133,8 @@ export default function AdminFilmsPage() {
   const [editingMovieId, setEditingMovieId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [cancellingBooking, setCancellingBooking] = useState(null);
+  const [refundsVersion, setRefundsVersion] = useState(0);
   const notifyTimer = useRef(null);
 
   // Showtimes Checkbox State
@@ -368,6 +371,22 @@ export default function AdminFilmsPage() {
     }
   };
 
+  /** Staff cancel from the bookings table; the dialog shows any error itself. */
+  const handleCancelBooking = async (booking, refund, reason) => {
+    const cancelled = await adminBookingsApi.cancel(booking.dbId, refund, reason);
+    setCancellingBooking(null);
+    setBookings((prev) => prev.filter((b) => b.dbId !== booking.dbId));
+    setRefundsVersion((v) => v + 1);
+    notify(
+      'success',
+      cancelled.refundAmount > 0
+        ? `${booking.id} cancelled. Refund of Rs. ${Number(cancelled.refundAmount).toLocaleString('en-LK')} added to the Refunds list.`
+        : `${booking.id} cancelled. The guest has been emailed.`,
+      6000
+    );
+    loadLive();
+  };
+
   // In-seat service order status
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     const target = orders.find((o) => o.id === orderId);
@@ -451,7 +470,6 @@ export default function AdminFilmsPage() {
         {/* Top Bar with Live Cinema Clock & Global + Upload Button */}
         <AdminTopBar
           activeTab={activeTab}
-          onOpenUploadModal={handleOpenAddModal}
           onToggleMobileSidebar={() => setMobileSidebarOpen((prev) => !prev)}
         />
 
@@ -519,10 +537,11 @@ export default function AdminFilmsPage() {
           {/* TAB 3: GUEST RESERVATIONS */}
           {activeTab === 'bookings' && (
             <TabErrorBoundary tabName="Guest Reservations">
-              <AdminRefundsPanel onNotify={notify} />
+              <AdminRefundsPanel key={refundsVersion} onNotify={notify} />
               <AdminBookingsTab
                 bookings={bookings}
                 onToggleCheckIn={handleToggleCheckIn}
+                onCancelBooking={setCancellingBooking}
               />
             </TabErrorBoundary>
           )}
@@ -549,6 +568,14 @@ export default function AdminFilmsPage() {
           )}
         </div>
       </div>
+
+      {cancellingBooking && (
+        <AdminCancelBookingDialog
+          booking={cancellingBooking}
+          onClose={() => setCancellingBooking(null)}
+          onConfirm={handleCancelBooking}
+        />
+      )}
 
       {/* =========================================================================
           UPLOAD & EDIT FILM MODAL (Rendered via Portal to document.body)

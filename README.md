@@ -9,6 +9,7 @@
 ![Express](https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20Auth-3ecf8e?logo=supabase&logoColor=white)
 ![Node](https://img.shields.io/badge/Node.js-%E2%89%A522.9-339933?logo=node.js&logoColor=white)
+[![CI](https://github.com/Sulana-UX/CINEVERSE/actions/workflows/ci.yml/badge.svg)](https://github.com/Sulana-UX/CINEVERSE/actions/workflows/ci.yml)
 
 ![CINEVERSE home page](docs/screenshots/home.png)
 
@@ -24,11 +25,18 @@
 - A booking is confirmed only after payment succeeds. Seats are held for 10 minutes while you pay.
 - E-ticket email styled like a boarding pass, with a QR code for entry.
 - Sign-up with a 6-digit email verification code.
+- Each hall has its own seat plan (100, 44 and 76 seats).
+- *My Bookings* page: see upcoming, past and cancelled tickets, and cancel with a refund based on how early you cancel.
 
 **For staff**
 - Admin dashboard with revenue and occupancy overview, bookings list with door check-in, film management and auditorium settings.
+- Cancel a customer's booking with a reason, choose the refund, and track refunds until they are paid.
+- Showtimes that overlap in the same hall are blocked.
 - Collapsible sidebar (`Ctrl+B`).
 - Admin access is stored in the database, not in the code.
+
+**Quality**
+- Automated backend and frontend tests, run on every push by GitHub Actions.
 
 ## Screenshots
 
@@ -106,6 +114,9 @@ In the Supabase dashboard, open **SQL Editor > New query**, then paste and run e
 2. `backend/supabase/migrations/002_bookings.sql`
 3. `backend/supabase/migrations/003_admin_dashboard.sql`
 4. `backend/supabase/migrations/004_cancellations.sql`
+5. `backend/supabase/migrations/005_otp_and_staff_cancel.sql`
+
+Also set **Authentication > Providers > Email > Minimum password length** to 8 in Supabase, so it matches the app's rule.
 
 ### 5. Create an admin account
 
@@ -140,6 +151,7 @@ Press `Ctrl+C` to stop both servers.
 | `npm run build` | Build the frontend for production (`frontend/dist`) |
 | `npm run start:backend` | Start the API without file watching |
 | `npm run lint` | Lint the frontend |
+| `npm test` | Backend tests (Node's built-in runner) and frontend tests (Vitest) |
 
 ## Environment variables
 
@@ -181,13 +193,23 @@ Choose film and time ─▶ Pick seats ─▶ Add extras ─▶ Pay ─▶ Confi
 3. Only the payment provider's server callback can mark a booking `confirmed`. The e-ticket email is sent at that moment.
 4. Unpaid holds expire and the seats go back on sale. If a payment arrives after its seats were sold to someone else, the booking is marked `refund_required` for staff to handle.
 
+**Halls and seats.** Each auditorium has its own seat plan in `HALL_LAYOUTS` (`backend/src/config/booking.js`); a hall without one uses `SEAT_LAYOUT`.
+
+| Hall | Seats | Plan |
+| --- | --- | --- |
+| 01 The Sovereign Soundstage | 100 | Orchestra 4 rows × 12, Premier 3 × 12, Loge 2 × 8 |
+| 02 The Director’s Loge | 44 | Orchestra 2 × 8, Premier 2 × 8, Loge 2 × 6 |
+| 03 The Quantum Chamber | 76 | Orchestra 3 × 10, Premier 3 × 10, Loge 2 × 8 |
+
+Change a plan only when the hall has no upcoming bookings: a booked seat that disappears from the plan cannot be shown.
+
 **Seat prices**
 
 | Tier | Rows | Price |
 | --- | --- | --- |
-| Orchestra Suite | A to C | Rs. 2,500 |
-| Premier Velvet Recliner | D to F | Rs. 3,500 |
-| Royal Sovereign Loge | G to H | Rs. 5,000 |
+| Orchestra Suite | front rows | Rs. 2,500 |
+| Premier Velvet Recliner | middle rows | Rs. 3,500 |
+| Royal Sovereign Loge | back rows | Rs. 5,000 |
 
 ### My Bookings and cancellations
 
@@ -198,6 +220,8 @@ Signed-in guests see their tickets at `/my-bookings` (Upcoming, Past and Cancell
 | More than 24 hours before the screening | 100% |
 | Between 24 and 2 hours before | 50% |
 | Less than 2 hours before, or after door check-in | Cannot cancel |
+
+Staff can also cancel a booking for a guest (for example over the phone) from **Guest Reservations > Cancel**, at any time before door check-in. They choose the refund: what the rules give now, a full refund, or none, and write a reason that the guest sees in the email.
 
 Cancelling frees the seats straight away and emails the guest. The refund is recorded as *pending*. Staff pay it back in the payment provider's portal, then press **Mark refunded** in the admin dashboard (Guest Reservations tab). Demo payments are marked refunded automatically because no money moved.
 
@@ -236,6 +260,7 @@ Prices, the seat layout, extras, the 8-seat limit, the 10-minute hold and the ca
 | POST | `/api/admin/bookings/:id/check-in` | `{ checkedIn }` | Door check-in (admin) |
 | GET | `/api/admin/bookings/refunds` | | Refunds owed, and those paid in the last 30 days (admin) |
 | POST | `/api/admin/bookings/:id/refund` | `{ reference }` | Mark a refund as paid (admin) |
+| POST | `/api/admin/bookings/:id/cancel` | `{ refund, reason }` (refund: `policy`, `full` or `none`) | Staff cancel a paid booking for a guest (admin) |
 | GET / POST | `/api/admin/movies` | film fields | List films / add a film (admin) |
 | PUT / DELETE | `/api/admin/movies/:id` | film fields | Edit / remove a film (admin) |
 | GET | `/api/admin/auditoriums` | | Halls with what is playing now (admin) |
@@ -245,7 +270,20 @@ Prices, the seat layout, extras, the 8-seat limit, the 10-minute hold and the ca
 | PATCH | `/api/admin/concierge-orders/:bookingId` | `{ status }` | Pending, Preparing or Delivered (admin) |
 | POST | `/api/uploads/cloudinary-signature` | | Signature for a browser upload to Cloudinary |
 
-Verification codes are kept in the API's memory, so they are lost when the server restarts.
+Verification codes are stored as salted hashes in the `otp_codes` table, so they survive a server restart and work with several API servers. Without a database (local experiments only) they fall back to process memory.
+
+New passwords (sign-up) need 8 to 72 characters with at least one letter and one number. Signing in only checks that a password was entered, so older accounts keep working. Admin passwords set with `create-admin` need at least 10 characters.
+
+## Tests
+
+```bash
+npm test
+```
+
+- `backend/test/`: prices and seat plans, Colombo time and the sales cutoff, cancellation rules, film validation and clashes, dashboard numbers, verification codes, password rules, email escaping, PayHere signatures, and HTTP checks against the running app. They never touch the real database or send email.
+- `frontend/src/test/`: money and date formatting, the booking flow helpers, and the sign-in / sign-up form rules.
+
+GitHub Actions (`.github/workflows/ci.yml`) runs the tests, lint and a production build on every push to `main` and every pull request.
 
 ## Deploying
 

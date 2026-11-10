@@ -1,63 +1,121 @@
 import { randomInt } from 'node:crypto';
+import { supabaseAdmin } from '../lib/supabaseAdmin.js';
 
 /**
- * In-memory OTP store. Codes live for 10 minutes and allow 5 attempts.
- * Note: memory is per-process, so codes are lost on restart and are not
- * shared between multiple server instances (use Redis/DB for that).
+ * Email verification codes: 10 minutes, 5 attempts, 30 s between sends.
+ * Stored (hashed) in Supabase table public.otp_codes, so they survive a restart
+ * and work across several servers. Without a database (local dev only) they
+ * fall back to process memory.
  */
-const TTL_MS = 10 * 60 * 1000;
+const TTL_SECONDS = 10 * 60;
 const MAX_ATTEMPTS = 5;
-const RESEND_COOLDOWN_MS = 30 * 1000;
+const RESEND_COOLDOWN_SECONDS = 30;
 
-const store = new Map();
+const MESSAGES = {
+  not_found: 'Verification code not found or expired. Please request a new code.',
+  expired: 'Verification code has expired. Please request a new code.',
+  too_many: 'Too many attempts. Please request a new code.',
+  wrong: 'Incorrect 6-digit verification code.',
+};
 
-const key = (email) => String(email).trim().toLowerCase();
+const normalise = (email) => String(email).trim().toLowerCase();
+const newCode = () => String(randomInt(100000, 1000000));
 
-export function canIssueOtp(email) {
-  const record = store.get(key(email));
-  if (!record) return { ok: true };
-  const wait = record.issuedAt + RESEND_COOLDOWN_MS - Date.now();
-  return wait > 0 ? { ok: false, retryAfterSec: Math.ceil(wait / 1000) } : { ok: true };
+// ---------------------------------------------------------------- memory fallback
+const memory = new Map();
+
+function memoryIssue(email, code) {
+  const now = Date.now();
+  const record = memory.get(email);
+  if (record) {
+    const wait = Math.ceil((record.sentAt + RESEND_COOLDOWN_SECONDS * 1000 - now) / 1000);
+    if (wait > 0) return wait;
+  }
+  memory.set(email, { code, sentAt: now, expiresAt: now + TTL_SECONDS * 1000, attempts: 0 });
+  return 0;
 }
 
-export function issueOtp(email) {
-  const otp = String(randomInt(100000, 1000000));
-  store.set(key(email), { otp, issuedAt: Date.now(), expiresAt: Date.now() + TTL_MS, attempts: 0 });
-  return otp;
-}
-
-export function discardOtp(email) {
-  store.delete(key(email));
-}
-
-export function verifyOtp(email, otp) {
-  const k = key(email);
-  const record = store.get(k);
-  if (!record) return { ok: false, error: 'Verification code not found or expired.' };
-
+function memoryCheck(email, code, consume) {
+  const record = memory.get(email);
+  if (!record) return 'not_found';
   if (Date.now() > record.expiresAt) {
-    store.delete(k);
-    return { ok: false, error: 'Verification code has expired.' };
+    memory.delete(email);
+    return 'expired';
   }
-
+  if (record.attempts >= MAX_ATTEMPTS) {
+    memory.delete(email);
+    return 'too_many';
+  }
   record.attempts += 1;
-  if (record.attempts > MAX_ATTEMPTS) {
-    store.delete(k);
-    return { ok: false, error: 'Too many attempts. Please request a new code.' };
-  }
-
-  if (record.otp !== String(otp).trim()) {
-    return { ok: false, error: 'Incorrect 6-digit verification code.' };
-  }
-
-  store.delete(k);
-  return { ok: true };
+  if (record.code !== code) return 'wrong';
+  if (consume) memory.delete(email);
+  return 'ok';
 }
 
-// Periodically drop expired codes so the map doesn't grow forever.
+// ---------------------------------------------------------------- public API
+
+/**
+ * Create a code for this email.
+ * @returns {Promise<{ ok: true, otp: string } | { ok: false, retryAfterSec: number }>}
+ */
+export async function issueOtp(email) {
+  const key = normalise(email);
+  const otp = newCode();
+  let wait;
+  if (supabaseAdmin) {
+    const { data, error } = await supabaseAdmin.rpc('issue_otp', {
+      p_email: key,
+      p_code: otp,
+      p_ttl_seconds: TTL_SECONDS,
+      p_cooldown_seconds: RESEND_COOLDOWN_SECONDS,
+    });
+    if (error) throw error;
+    wait = data;
+  } else {
+    wait = memoryIssue(key, otp);
+  }
+  return wait > 0 ? { ok: false, retryAfterSec: wait } : { ok: true, otp };
+}
+
+/** Forget the code (e.g. the email could not be sent). */
+export async function discardOtp(email) {
+  const key = normalise(email);
+  if (supabaseAdmin) {
+    const { error } = await supabaseAdmin.from('otp_codes').delete().eq('email', key);
+    if (error) throw error;
+  } else {
+    memory.delete(key);
+  }
+}
+
+/**
+ * Check a code. Every call counts as an attempt.
+ * @param {{ consume?: boolean }} options  consume: delete the code when it is correct
+ * @returns {Promise<{ ok: true } | { ok: false, error: string }>}
+ */
+export async function verifyOtp(email, otp, { consume = true } = {}) {
+  const key = normalise(email);
+  const code = String(otp ?? '').trim();
+  if (!/^\d{6}$/.test(code)) return { ok: false, error: MESSAGES.wrong };
+
+  let status;
+  if (supabaseAdmin) {
+    const { data, error } = await supabaseAdmin.rpc('check_otp', {
+      p_email: key,
+      p_code: code,
+      p_max_attempts: MAX_ATTEMPTS,
+      p_consume: consume,
+    });
+    if (error) throw error;
+    status = data;
+  } else {
+    status = memoryCheck(key, code, consume);
+  }
+  return status === 'ok' ? { ok: true } : { ok: false, error: MESSAGES[status] || MESSAGES.wrong };
+}
+
+// Drop expired in-memory codes so the fallback map does not grow forever.
 setInterval(() => {
   const now = Date.now();
-  for (const [k, record] of store) {
-    if (now > record.expiresAt) store.delete(k);
-  }
+  for (const [k, record] of memory) if (now > record.expiresAt) memory.delete(k);
 }, 60 * 1000).unref();

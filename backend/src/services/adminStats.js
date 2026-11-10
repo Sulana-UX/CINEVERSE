@@ -1,7 +1,7 @@
-import { BOOKABLE_STATUSES, SEAT_TIERS } from '../config/booking.js';
+import { BOOKABLE_STATUSES, SEAT_TIERS, seatCount as hallSeats, tierCapacity } from '../config/booking.js';
 import { addDays, colomboToday } from '../utils/showtime.js';
 import { auditoriumNumber } from './movieCatalog.js';
-import { SEATS_PER_SHOW, TIER_CAPACITY, buildTodayShows } from './hallSchedule.js';
+import { buildTodayShows } from './hallSchedule.js';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const weekday = (dateStr) => WEEKDAYS[new Date(`${dateStr}T00:00:00Z`).getUTCDay()];
@@ -29,7 +29,8 @@ export function buildDashboardStats({ movies, halls, bookings, now = new Date() 
   const showCount = [...todayShows.values()].reduce((n, shows) => n + shows.length, 0);
   const todaysBookings = bookings.filter((b) => b.show_date === today);
   const seatsSoldToday = todaysBookings.reduce((n, b) => n + seatCount(b), 0);
-  const capacityToday = showCount * SEATS_PER_SHOW;
+  // Each hall has its own seat plan, so capacity is counted hall by hall.
+  const capacityToday = [...todayShows.entries()].reduce((n, [hall, shows]) => n + shows.length * hallSeats(hall), 0);
 
   const openConcierge = bookings.filter(
     (b) => b.show_date >= today && Array.isArray(b.addons) && b.addons.length > 0 && b.concierge_status !== 'Delivered'
@@ -80,7 +81,7 @@ export function buildDashboardStats({ movies, halls, bookings, now = new Date() 
       name: h.name,
       format: h.format,
       occupied: sold.reduce((n, b) => n + seatCount(b), 0),
-      capacity: shows.length * SEATS_PER_SHOW,
+      capacity: shows.length * hallSeats(h.number),
       gross: sold.reduce((s, b) => s + b.total_amount, 0),
       shows: shows.length,
     };
@@ -97,7 +98,8 @@ export function buildDashboardStats({ movies, halls, bookings, now = new Date() 
         }
       }
     }
-    return { id: key, name: tier.name, price: tier.price, occupied, capacity: showCount * TIER_CAPACITY[key], gross };
+    const capacity = [...todayShows.entries()].reduce((n, [hall, shows]) => n + shows.length * tierCapacity(hall)[key], 0);
+    return { id: key, name: tier.name, price: tier.price, occupied, capacity, gross };
   });
 
   // ---- today's timeline per hall

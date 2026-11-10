@@ -12,10 +12,11 @@ import {
   RotateCcw,
   Crown,
   Armchair,
+  Ban,
 } from 'lucide-react';
 import { formatLKR } from '../../../utils/currency';
 
-export default function AdminBookingsTab({ bookings = [], onToggleCheckIn }) {
+export default function AdminBookingsTab({ bookings = [], onToggleCheckIn, onCancelBooking }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [auditoriumFilter, setAuditoriumFilter] = useState('ALL');
@@ -133,31 +134,31 @@ export default function AdminBookingsTab({ bookings = [], onToggleCheckIn }) {
     return palettes[Math.abs(hash) % palettes.length];
   };
 
-  // Tier styling helper
+  // Tier styling helper: short label in the table, full tier name on hover.
   const getTierBadge = (tier = '') => {
     const str = String(tier || '');
     if (!str) return <span className="tier-tag tier-club">—</span>;
     const lower = str.toLowerCase();
-    if (lower.includes('sovereign') || lower.includes('royal')) {
+    if (lower.includes('sovereign') || lower.includes('royal') || lower.includes('loge')) {
       return (
-        <span className="tier-tag tier-sovereign">
+        <span className="tier-tag tier-sovereign" title={str}>
           <Crown size={10} />
-          <span>{str}</span>
+          <span>Loge</span>
         </span>
       );
     }
     if (lower.includes('velvet') || lower.includes('premier')) {
       return (
-        <span className="tier-tag tier-premier">
+        <span className="tier-tag tier-premier" title={str}>
           <Sparkles size={10} />
-          <span>{str}</span>
+          <span>Premier</span>
         </span>
       );
     }
     return (
-      <span className="tier-tag tier-club">
+      <span className="tier-tag tier-club" title={str}>
         <Armchair size={10} />
-        <span>{str}</span>
+        <span>{lower.includes('orchestra') ? 'Orchestra' : str}</span>
       </span>
     );
   };
@@ -500,7 +501,11 @@ export default function AdminBookingsTab({ bookings = [], onToggleCheckIn }) {
                               {seatsFormatted}
                             </span>
                           </div>
-                          {getTierBadge(b.tier)}
+                          <div className="tier-tag-list">
+                            {(b.tier ? b.tier.split(' · ') : ['']).map((t) => (
+                              <React.Fragment key={t || 'none'}>{getTierBadge(t)}</React.Fragment>
+                            ))}
+                          </div>
                         </div>
                       </td>
 
@@ -536,8 +541,9 @@ export default function AdminBookingsTab({ bookings = [], onToggleCheckIn }) {
                         </div>
                       </td>
 
-                      {/* 7. DOOR CHECK-IN TOGGLE */}
+                      {/* 7. DOOR CHECK-IN TOGGLE + STAFF CANCEL */}
                       <td style={{ textAlign: 'right' }}>
+                        <div className="booking-row-actions">
                         <button
                           type="button"
                           onClick={() => onToggleCheckIn(b.id)}
@@ -562,6 +568,18 @@ export default function AdminBookingsTab({ bookings = [], onToggleCheckIn }) {
                             </>
                           )}
                         </button>
+                        {b.rawStatus === 'confirmed' && !isChecked && onCancelBooking && (
+                          <button
+                            type="button"
+                            className="booking-cancel-btn"
+                            onClick={() => onCancelBooking(b)}
+                            title="Cancel this booking for the guest"
+                          >
+                            <Ban size={13} />
+                            <span>Cancel</span>
+                          </button>
+                        )}
+                        </div>
                       </td>
                     </tr>
                   );

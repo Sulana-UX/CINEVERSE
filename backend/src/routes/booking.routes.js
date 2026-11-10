@@ -8,6 +8,7 @@ import {
   HOLD_MINUTES,
   MAX_SEATS_PER_BOOKING,
   SALES_CUTOFF_MINUTES,
+  HALL_LAYOUTS,
   SEAT_LAYOUT,
   SEAT_TIERS,
   TIMEZONE,
@@ -25,6 +26,7 @@ import {
   toOwnerBooking,
 } from '../services/bookingService.js';
 import { describeCancellationRules } from '../services/cancellation.js';
+import { auditoriumNumber } from '../services/movieCatalog.js';
 import { colomboToday, validateShowSlot } from '../utils/showtime.js';
 
 const router = Router();
@@ -72,6 +74,8 @@ router.get('/config', (_req, res) => {
     holdMinutes: HOLD_MINUTES,
     bookableStatuses: BOOKABLE_STATUSES,
     tiers: SEAT_TIERS,
+    // Seat plan per hall number; `layout` is the plan for halls without their own.
+    layouts: HALL_LAYOUTS,
     layout: SEAT_LAYOUT,
     extras: EXTRAS,
     paymentProvider: activeProvider(),
@@ -129,7 +133,7 @@ router.post('/holds', requireDb, requireUser, async (req, res, next) => {
 
     let quote;
     try {
-      quote = buildQuote({ seats, addons });
+      quote = buildQuote({ seats, addons, hall: auditoriumNumber(movie.auditorium) });
     } catch (err) {
       if (err instanceof QuoteError) return res.status(400).json({ error: err.message });
       throw err;

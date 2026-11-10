@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Mail, KeyRound, ArrowLeft, RefreshCw, CheckCircle2, ShieldCheck, Sparkles } from 'lucide-react';
+import { KeyRound, RefreshCw } from 'lucide-react';
 import AuthLayout from '../components/AuthLayout';
 import AuthForm from '../components/AuthForm';
 import PasswordInput from '../components/PasswordInput';
 import { useAuth } from '../hooks/useAuth';
-import { validateRegisterForm } from '../validation/authValidation';
+import { validateRegisterForm, PASSWORD_HINT } from '../validation/authValidation';
 import { emailService } from '../../../services/emailService';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { register, loading: authLoading, error: authError, clearError, isAuthenticated } = useAuth();
+  const { register, error: authError, clearError, isAuthenticated } = useAuth();
 
   // Registration step: 'form' | 'otp'
   const [step, setStep] = useState('form');
@@ -110,7 +110,7 @@ export default function RegisterPage() {
       }, 150);
     } catch (err) {
       setOtpLoading(false);
-      setOtpError('Unable to dispatch verification email. Please check your email address.');
+      setOtpError(err.message || 'Unable to send the verification email. Please check your email address.');
     }
   };
 
@@ -285,7 +285,7 @@ export default function RegisterPage() {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="At least 6 characters"
+                placeholder={PASSWORD_HINT}
                 required
                 error={fieldErrors.password}
                 autoComplete="new-password"

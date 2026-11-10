@@ -20,18 +20,28 @@ export function validateEmail(email) {
   return null;
 }
 
+// Same rules as the backend (backend/src/utils/password.js).
+export const PASSWORD_MIN = 8;
+export const PASSWORD_MAX = 72;
+export const PASSWORD_HINT = `At least ${PASSWORD_MIN} characters, with a letter and a number`;
+
 /**
- * Validate a password.
+ * Validate a NEW password (sign-up, reset).
  * @param {string} password
- * @param {number} [minLength=6]
  * @returns {string|null} Error message or null if valid.
  */
-export function validatePassword(password, minLength = 6) {
+export function validateNewPassword(password) {
   if (!password) {
     return 'Password is required.';
   }
-  if (password.length < minLength) {
-    return `Password must be at least ${minLength} characters long.`;
+  if (password.length < PASSWORD_MIN) {
+    return `Password must be at least ${PASSWORD_MIN} characters long.`;
+  }
+  if (password.length > PASSWORD_MAX) {
+    return `Password must be ${PASSWORD_MAX} characters or fewer.`;
+  }
+  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+    return 'Password must include at least one letter and one number.';
   }
   return null;
 }
@@ -78,8 +88,8 @@ export function validateLoginForm({ email, password }) {
   const emailError = validateEmail(email);
   if (emailError) errors.email = emailError;
 
-  const passwordError = validatePassword(password);
-  if (passwordError) errors.password = passwordError;
+  // Signing in only needs a password; the rules apply when one is created.
+  if (!password) errors.password = 'Password is required.';
 
   return {
     isValid: Object.keys(errors).length === 0,
@@ -101,7 +111,7 @@ export function validateRegisterForm({ fullName, email, password, confirmPasswor
   const emailError = validateEmail(email);
   if (emailError) errors.email = emailError;
 
-  const passwordError = validatePassword(password, 8);
+  const passwordError = validateNewPassword(password);
   if (passwordError) errors.password = passwordError;
 
   const matchError = validatePasswordMatch(password, confirmPassword);

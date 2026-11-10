@@ -10,6 +10,8 @@ export function AuthProvider({ children }) {
   // covers login/logout requests, which must not hide the page.
   const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState(null);
+  // True right after the user pressed "Sign out" (not for a first visit).
+  const [signedOut, setSignedOut] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -67,6 +69,7 @@ export function AuthProvider({ children }) {
       }
       setUser(result.user);
       setSession(result.session);
+      setSignedOut(false);
       return { success: true, user: result.user };
     } catch (err) {
       const message = err.message || 'Login failed.';
@@ -88,6 +91,7 @@ export function AuthProvider({ children }) {
       }
       setUser(result.user);
       setSession(result.session);
+      setSignedOut(false);
       return { success: true, user: result.user };
     } catch (err) {
       const message = err.message || 'Registration failed.';
@@ -100,11 +104,15 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     setLoading(true);
+    // Set first: Supabase's own sign-out event may clear the user before
+    // authService.logout() returns.
+    setSignedOut(true);
     try {
       await authService.logout();
       setUser(null);
       setSession(null);
     } catch (err) {
+      setSignedOut(false);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -116,6 +124,7 @@ export function AuthProvider({ children }) {
     session,
     loading,
     initializing,
+    signedOut,
     error,
     login,
     register,

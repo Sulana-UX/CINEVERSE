@@ -27,7 +27,7 @@ const button = (primary) => ({
 });
 
 export default function AdminRoute({ children }) {
-  const { user, isAuthenticated, initializing } = useAuth();
+  const { user, isAuthenticated, initializing, signedOut } = useAuth();
   const location = useLocation();
 
   if (initializing) {
@@ -70,17 +70,16 @@ export default function AdminRoute({ children }) {
   }
 
   if (!isAuthenticated) {
-    return (
-      <Navigate
-        to="/login"
-        state={{
+    // Someone who just pressed "Sign out" gets a plain notice; the
+    // "admins only" warning is for visitors who open /admin signed out.
+    const state = signedOut
+      ? { message: 'You have been signed out.' }
+      : {
           from: location,
           adminRequired: true,
           message: 'Admin authorization required. Please sign in with administrator credentials.',
-        }}
-        replace
-      />
-    );
+        };
+    return <Navigate to="/login" state={state} replace />;
   }
 
   return children;

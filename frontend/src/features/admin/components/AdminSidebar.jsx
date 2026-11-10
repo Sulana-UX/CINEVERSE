@@ -20,6 +20,7 @@ export default function AdminSidebar({
   mobileOpen,
   collapsed = false,
   onToggleCollapse,
+  hallCount = 0,
 }) {
   const { user, logout } = useAuth();
 
@@ -27,7 +28,7 @@ export default function AdminSidebar({
     { id: 'overview', label: 'Executive Overview', icon: LayoutDashboard, badge: null },
     { id: 'films', label: 'Repertory Archive', icon: Film, badge: null },
     { id: 'bookings', label: 'Guest Reservations', icon: Ticket, badge: 'LIVE' },
-    { id: 'auditoriums', label: 'Soundstages & Halls', icon: Maximize2, badge: '03' },
+    { id: 'auditoriums', label: 'Soundstages & Halls', icon: Maximize2, badge: hallCount ? String(hallCount).padStart(2, '0') : null },
     { id: 'concierge', label: 'VIP Concierge Bar', icon: Wine, badge: null },
   ];
 

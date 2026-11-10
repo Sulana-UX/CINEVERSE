@@ -431,6 +431,7 @@ export default function AdminFilmsPage() {
         mobileOpen={mobileSidebarOpen}
         collapsed={sidebarCollapsed}
         onToggleCollapse={toggleSidebarCollapsed}
+        hallCount={auditoriums.length}
         onSelectTab={(tab) => {
           setActiveTab(tab);
           setMobileSidebarOpen(false);

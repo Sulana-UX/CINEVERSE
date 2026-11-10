@@ -37,15 +37,15 @@ export default function AdminBookingsTab({ bookings = [], onToggleCheckIn }) {
 
   // Safe auditorium extractor
   const getAuditoriumShort = (aud) => {
-    if (!aud || typeof aud !== 'string') return 'Auditorium 01';
+    if (!aud || typeof aud !== 'string') return '—';
     return aud.split('—')[0].trim();
   };
 
   // Bulletproof date formatter (handles objects like {day, date, full} or strings)
   const formatDate = (val) => {
-    if (!val) return 'Today';
+    if (!val) return '—';
     if (typeof val === 'object') {
-      return val.full || `${val.day || ''} ${val.date || ''}`.trim() || 'Today';
+      return val.full || `${val.day || ''} ${val.date || ''}`.trim() || '—';
     }
     return String(val);
   };
@@ -135,7 +135,8 @@ export default function AdminBookingsTab({ bookings = [], onToggleCheckIn }) {
 
   // Tier styling helper
   const getTierBadge = (tier = '') => {
-    const str = String(tier || 'Royal Sovereign Loge');
+    const str = String(tier || '');
+    if (!str) return <span className="tier-tag tier-club">—</span>;
     const lower = str.toLowerCase();
     if (lower.includes('sovereign') || lower.includes('royal')) {
       return (
@@ -156,7 +157,7 @@ export default function AdminBookingsTab({ bookings = [], onToggleCheckIn }) {
     return (
       <span className="tier-tag tier-club">
         <Armchair size={10} />
-        <span>{str || 'Standard Club'}</span>
+        <span>{str}</span>
       </span>
     );
   };
@@ -181,14 +182,14 @@ export default function AdminBookingsTab({ bookings = [], onToggleCheckIn }) {
     const rows = filteredBookings.map((b) => [
       b.id,
       `"${formatDate(b.date)}"`,
-      `"${b.guestName || 'Valued Patron'}"`,
-      b.guestEmail || 'patron@cineverse.com',
-      `"${b.movieTitle || (b.movie && b.movie.title) || 'Repertory Film'}"`,
-      `"${b.format || (b.movie && b.movie.format) || '70MM'}"`,
-      `"${b.auditorium || (b.movie && b.movie.auditorium) || 'Auditorium 01'}"`,
-      b.showtime || b.time || '20:30',
+      `"${b.guestName || ''}"`,
+      b.guestEmail || '',
+      `"${b.movieTitle || (b.movie && b.movie.title) || ''}"`,
+      `"${b.format || (b.movie && b.movie.format) || ''}"`,
+      `"${b.auditorium || (b.movie && b.movie.auditorium) || ''}"`,
+      b.showtime || b.time || '',
       `"${formatSeats(b.seats, b.seatsDisplay)}"`,
-      `"${b.tier || 'Royal Sovereign Loge'}"`,
+      `"${b.tier || ''}"`,
       `"${(b.addons || []).map((a) => (typeof a === 'object' && a !== null ? `${a.name} (x${a.quantity || 1})` : String(a))).join('; ')}"`,
       (Number(b.totalAmount) || 0).toFixed(2),
       b.checkedIn ? 'Checked-In' : 'Awaiting Arrival',
@@ -432,12 +433,12 @@ export default function AdminBookingsTab({ bookings = [], onToggleCheckIn }) {
                 </tr>
               ) : (
                 filteredBookings.map((b) => {
-                  const guestName = b.guestName || 'Valued Patron';
+                  const guestName = b.guestName || 'Guest';
                   const avatarStyle = getAvatarStyle(guestName);
                   const isChecked = Boolean(b.checkedIn);
-                  const movieTitle = b.movieTitle || (b.movie && b.movie.title) || 'Repertory Film';
-                  const format = b.format || (b.movie && b.movie.format) || '70MM DUAL LASER';
-                  const showtime = b.showtime || b.time || '20:30';
+                  const movieTitle = b.movieTitle || (b.movie && b.movie.title) || '—';
+                  const format = b.format || (b.movie && b.movie.format) || '';
+                  const showtime = b.showtime || b.time || '—';
                   const audShort = getAuditoriumShort(b.auditorium || (b.movie && b.movie.auditorium));
                   const seatsFormatted = formatSeats(b.seats, b.seatsDisplay);
 
@@ -469,7 +470,7 @@ export default function AdminBookingsTab({ bookings = [], onToggleCheckIn }) {
                           </div>
                           <div className="patron-text-meta">
                             <span className="patron-full-name">{guestName}</span>
-                            <span className="patron-email-link">{b.guestEmail || 'patron@cineverse.com'}</span>
+                            <span className="patron-email-link">{b.guestEmail || '—'}</span>
                           </div>
                         </div>
                       </td>

@@ -8,7 +8,6 @@ import {
   Clock,
   Video,
   ExternalLink,
-  RotateCcw,
   Search,
   Sparkles,
   Layers,
@@ -21,7 +20,6 @@ export default function AdminFilmsTab({
   onOpenAddModal,
   onOpenEditModal,
   onDeleteMovie,
-  onRestoreDefaults,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -159,15 +157,6 @@ export default function AdminFilmsTab({
         <div className="films-action-buttons">
           <button
             type="button"
-            onClick={onRestoreDefaults}
-            className="admin-restore-btn"
-            title="Restore default 70mm repertory catalog"
-          >
-            <RotateCcw size={14} />
-            <span>Restore Defaults</span>
-          </button>
-          <button
-            type="button"
             onClick={onOpenAddModal}
             className="admin-topbar-action-btn film-upload-cta"
           >
@@ -192,7 +181,7 @@ export default function AdminFilmsTab({
           <p className="admin-empty-desc">
             {searchQuery || statusFilter !== 'ALL'
               ? `No film presentations match your search "${searchQuery || statusFilter}".`
-              : 'Your repertory archive is currently empty. Upload your first 70mm presentation or restore the default catalog.'}
+              : 'No films yet. Upload your first presentation to open it for booking.'}
           </p>
           <div className="admin-empty-actions">
             {searchQuery || statusFilter !== 'ALL' ? (
@@ -207,24 +196,14 @@ export default function AdminFilmsTab({
                 <span>Reset All Filters</span>
               </button>
             ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={onOpenAddModal}
-                  className="admin-topbar-action-btn"
-                >
-                  <Plus size={15} />
-                  <span>Upload First Film</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={onRestoreDefaults}
-                  className="admin-restore-btn"
-                >
-                  <RotateCcw size={14} />
-                  <span>Restore Default Catalog</span>
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={onOpenAddModal}
+                className="admin-topbar-action-btn"
+              >
+                <Plus size={15} />
+                <span>Upload First Film</span>
+              </button>
             )}
           </div>
         </div>
@@ -312,7 +291,10 @@ export default function AdminFilmsTab({
                   <div className="film-showtimes-strip">
                     <div className="showtimes-header">
                       <span className="showtimes-label">DAILY SHOWTIMES:</span>
-                      <span className="showtimes-count font-mono">{showtimesArr.length} screenings</span>
+                      <span className="showtimes-count font-mono">
+                        {showtimesArr.length} screenings
+                        {movie.upcomingBookings > 0 && ` · ${movie.upcomingBookings} upcoming bookings`}
+                      </span>
                     </div>
                     <div className="showtimes-tags-row">
                       {showtimesArr.map((t, idx) => (
@@ -339,7 +321,12 @@ export default function AdminFilmsTab({
                       type="button"
                       onClick={() => onDeleteMovie(movie)}
                       className="film-action-btn delete-btn"
-                      title="Withdraw film from active repertory"
+                      disabled={movie.upcomingBookings > 0}
+                      title={
+                        movie.upcomingBookings > 0
+                          ? 'Guests hold upcoming seats for this film. Set it to Coming Soon to stop new sales.'
+                          : 'Remove film from the repertory'
+                      }
                     >
                       <Trash2 size={14} />
                       <span>Withdraw</span>

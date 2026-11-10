@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Wine, Clock, CheckCircle2, ChevronRight } from 'lucide-react';
+import { formatLKR } from '../../../utils/currency';
+import { formatShowDate } from '../../booking/utils/showDates';
 
 export default function AdminConciergeTab({ orders, onUpdateOrderStatus }) {
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -52,6 +54,13 @@ export default function AdminConciergeTab({ orders, onUpdateOrderStatus }) {
       </div>
 
       {/* 2. Orders Grid */}
+      {filteredOrders.length === 0 && (
+        <div className="chart-empty-state">
+          {orders.length === 0
+            ? 'No in-seat orders for today or upcoming screenings. Orders appear when a paid booking includes extras.'
+            : 'No orders with this status.'}
+        </div>
+      )}
       <div className="concierge-orders-grid">
         {filteredOrders.map((ord) => {
           const nextStatus = getNextStatus(ord.status);
@@ -63,7 +72,7 @@ export default function AdminConciergeTab({ orders, onUpdateOrderStatus }) {
                   <span className="order-id font-mono text-gold">{ord.id}</span>
                   <span className="order-time">
                     <Clock size={11} style={{ display: 'inline', marginRight: '3px' }} />
-                    {ord.orderTime}
+                    {formatShowDate(ord.showDate)} · {ord.orderTime}
                   </span>
                 </div>
                 <span
@@ -77,7 +86,9 @@ export default function AdminConciergeTab({ orders, onUpdateOrderStatus }) {
               <div className="order-guest-strip">
                 <div className="guest-info">
                   <span className="guest-name">{ord.guestName}</span>
-                  <span className="guest-hall">{ord.auditorium}</span>
+                  <span className="guest-hall">
+                    {ord.auditorium} · {ord.movieTitle}
+                  </span>
                 </div>
                 <div className="seat-badge-box">
                   <span className="seat-coords">{ord.seat}</span>
@@ -92,7 +103,7 @@ export default function AdminConciergeTab({ orders, onUpdateOrderStatus }) {
                       <Wine size={13} className="gold-icon" style={{ display: 'inline', marginRight: '5px' }} />
                       {item.name} <span className="item-qty">x{item.quantity}</span>
                     </span>
-                    <span className="item-price font-mono">${item.price * item.quantity}</span>
+                    <span className="item-price font-mono">{formatLKR(item.price * item.quantity)}</span>
                   </div>
                 ))}
               </div>
@@ -101,7 +112,7 @@ export default function AdminConciergeTab({ orders, onUpdateOrderStatus }) {
               <div className="order-card-footer">
                 <div className="order-total-group">
                   <span className="total-label">ORDER TOTAL</span>
-                  <span className="total-val font-mono text-champagne">${ord.total.toFixed(2)}</span>
+                  <span className="total-val font-mono text-champagne">{formatLKR(ord.total)}</span>
                 </div>
 
                 {ord.status !== 'Delivered' && (
@@ -118,7 +129,7 @@ export default function AdminConciergeTab({ orders, onUpdateOrderStatus }) {
                 {ord.status === 'Delivered' && (
                   <div className="delivered-badge">
                     <CheckCircle2 size={14} />
-                    <span>Fulfilled to Seat</span>
+                    <span>Delivered to seat</span>
                   </div>
                 )}
               </div>

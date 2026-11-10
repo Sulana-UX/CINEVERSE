@@ -1,48 +1,40 @@
 import React, { useState } from 'react';
 import { BarChart3, Sparkles } from 'lucide-react';
+import { formatLKR } from '../../../../utils/currency';
 
-export default function RevenueBarChart() {
+/** Round up to a tidy axis maximum: 1, 2 or 5 times a power of ten. */
+function niceMax(value) {
+  if (value <= 0) return 1000;
+  const power = 10 ** Math.floor(Math.log10(value));
+  const step = [1, 2, 5, 10].find((m) => m * power >= value);
+  return step * power;
+}
+
+const compactLKR = (n) => (n >= 1000 ? `${Math.round(n / 100) / 10}k` : String(n));
+
+export default function RevenueBarChart({ today = [], week = [] }) {
   const [activeRange, setActiveRange] = useState('today');
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
-  // Hourly screening data for Today
-  const HOURLY_DATA = [
-    { time: '11:00', film: 'Interstellar', hall: 'Quantum Chamber', tickets: 120, dining: 45, total: 165, seats: 4 },
-    { time: '13:30', film: 'Oppenheimer', hall: 'Director’s Loge', tickets: 180, dining: 60, total: 240, seats: 6 },
-    { time: '14:30', film: 'Dune: Part Two', hall: 'Sovereign Soundstage', tickets: 260, dining: 95, total: 355, seats: 9 },
-    { time: '17:45', film: 'Dune: Part Two', hall: 'Sovereign Soundstage', tickets: 290, dining: 110, total: 400, seats: 10 },
-    { time: '18:45', film: 'Interstellar', hall: 'Quantum Chamber', tickets: 210, dining: 75, total: 285, seats: 7 },
-    { time: '20:30', film: 'Dune: Part Two', hall: 'Sovereign Soundstage', tickets: 350, dining: 140, total: 490, seats: 12, isPeak: true },
-    { time: '21:15', film: 'Oppenheimer', hall: 'Director’s Loge', tickets: 230, dining: 85, total: 315, seats: 8 },
-    { time: '23:30', film: 'Dune: Part Two', hall: 'Sovereign Soundstage', tickets: 140, dining: 50, total: 190, seats: 5 },
-  ];
+  const currentDataset = (activeRange === 'today' ? today : week).map((d) => ({
+    ...d,
+    total: d.tickets + d.dining,
+  }));
+  const isEmpty = currentDataset.length === 0;
+  const peak = currentDataset.reduce((best, d) => (d.total > (best?.total ?? 0) ? d : best), null);
 
-  // 7-Day repertory data
-  const WEEKLY_DATA = [
-    { time: 'Thu', film: 'Repertory Total', hall: 'All Suites', tickets: 980, dining: 340, total: 1320, seats: 36 },
-    { time: 'Fri', film: 'Repertory Total', hall: 'All Suites', tickets: 1420, dining: 510, total: 1930, seats: 52 },
-    { time: 'Sat', film: 'Repertory Total', hall: 'All Suites', tickets: 1890, dining: 720, total: 2610, seats: 68, isPeak: true },
-    { time: 'Sun', film: 'Repertory Total', hall: 'All Suites', tickets: 1650, dining: 610, total: 2260, seats: 59 },
-    { time: 'Mon', film: 'Repertory Total', hall: 'All Suites', tickets: 820, dining: 280, total: 1100, seats: 30 },
-    { time: 'Tue', film: 'Repertory Total', hall: 'All Suites', tickets: 1050, dining: 390, total: 1440, seats: 38 },
-    { time: 'Wed', film: 'Today (Live)', hall: 'All Suites', tickets: 1120, dining: 404, total: 1524, seats: 41 },
-  ];
-
-  const currentDataset = activeRange === 'today' ? HOURLY_DATA : WEEKLY_DATA;
-  // Round the axis ceiling up to a clean step so grid labels match bar heights exactly.
   // Bars are drawn side by side (not stacked), so scale against the tallest single bar.
-  const maxBar = Math.max(...currentDataset.map((d) => Math.max(d.tickets, d.dining)));
-  const axisStep = maxBar > 1000 ? 500 : 100;
-  const axisMax = Math.ceil(maxBar / axisStep) * axisStep;
+  const maxBar = Math.max(0, ...currentDataset.map((d) => Math.max(d.tickets, d.dining)));
+  const axisMax = niceMax(maxBar);
   const chartHeight = 170;
   const chartWidth = 580;
-  const barSlotWidth = chartWidth / currentDataset.length;
-  const barWidth = activeRange === 'today' ? 18 : 24;
+  const barSlotWidth = chartWidth / Math.max(currentDataset.length, 1);
+  const barWidth = Math.max(8, Math.min(24, barSlotWidth / 3));
 
   const totalTickets = currentDataset.reduce((sum, d) => sum + d.tickets, 0);
   const totalDining = currentDataset.reduce((sum, d) => sum + d.dining, 0);
   const totalOverall = totalTickets + totalDining;
-  const diningRatio = Math.round((totalDining / totalOverall) * 100);
+  const diningRatio = totalOverall ? Math.round((totalDining / totalOverall) * 100) : 0;
 
   return (
     <div className="modern-chart-card">
@@ -53,9 +45,9 @@ export default function RevenueBarChart() {
             <BarChart3 size={18} className="chart-header-icon" />
           </div>
           <div>
-            <h3 className="chart-main-title">Box Office & VIP Concession Velocity</h3>
+            <h3 className="chart-main-title">Ticket & In-Seat Service Revenue</h3>
             <p className="chart-main-subtitle">
-              Admissions gross vs VIP in-seat sommelier beverage revenue
+              Paid bookings: tickets compared with in-seat extras
             </p>
           </div>
         </div>
@@ -70,7 +62,7 @@ export default function RevenueBarChart() {
               }}
               className={`segmented-btn ${activeRange === 'today' ? 'is-active' : ''}`}
             >
-              Today's Showtimes
+              Today's Screenings
             </button>
             <button
               type="button"
@@ -80,7 +72,7 @@ export default function RevenueBarChart() {
               }}
               className={`segmented-btn ${activeRange === 'week' ? 'is-active' : ''}`}
             >
-              7-Day Repertory
+              Last 7 Days
             </button>
           </div>
         </div>
@@ -90,23 +82,30 @@ export default function RevenueBarChart() {
       <div className="chart-metrics-row">
         <div className="chart-metric-pill">
           <span className="pill-metric-label">PERIOD GROSS</span>
-          <span className="pill-metric-value text-indigo">${totalOverall.toLocaleString()}</span>
+          <span className="pill-metric-value text-indigo">{formatLKR(totalOverall)}</span>
         </div>
         <div className="chart-metric-pill">
           <span className="pill-metric-label">TICKET SALES</span>
-          <span className="pill-metric-value">${totalTickets.toLocaleString()}</span>
+          <span className="pill-metric-value">{formatLKR(totalTickets)}</span>
         </div>
         <div className="chart-metric-pill">
           <span className="pill-metric-label">VIP CONCESSIONS</span>
-          <span className="pill-metric-value text-emerald">${totalDining.toLocaleString()} ({diningRatio}%)</span>
+          <span className="pill-metric-value text-emerald">{formatLKR(totalDining)} ({diningRatio}%)</span>
         </div>
         <div className="chart-metric-pill highlight-pill">
           <Sparkles size={13} className="text-amber" />
-          <span className="pill-metric-value">Peak: {activeRange === 'today' ? '20:30 ($490)' : 'Saturday ($2,610)'}</span>
+          <span className="pill-metric-value">
+            {peak ? `Peak: ${peak.label} (${formatLKR(peak.total)})` : 'No sales yet'}
+          </span>
         </div>
       </div>
 
       {/* SVG Interactive Chart Canvas */}
+      {isEmpty ? (
+        <div className="chart-empty-state">
+          {activeRange === 'today' ? 'No screenings are scheduled today.' : 'No sales in the last 7 days.'}
+        </div>
+      ) : (
       <div className="svg-chart-container">
         <svg
           viewBox={`0 0 ${chartWidth + 60} ${chartHeight + 50}`}
@@ -154,7 +153,7 @@ export default function RevenueBarChart() {
                   textAnchor="end"
                   className="chart-axis-label"
                 >
-                  ${gridVal}
+                  {compactLKR(gridVal)}
                 </text>
               </g>
             );
@@ -233,14 +232,14 @@ export default function RevenueBarChart() {
                   y={chartHeight + 42}
                   textAnchor="middle"
                   className={`chart-x-label ${isHovered ? 'is-active-label' : ''} ${
-                    item.isPeak ? 'is-peak-label' : ''
+                    peak === item && item.total > 0 ? 'is-peak-label' : ''
                   }`}
                 >
-                  {item.time}
+                  {item.label}
                 </text>
 
                 {/* Peak Indicator Dot */}
-                {item.isPeak && (
+                {peak === item && item.total > 0 && (
                   <circle
                     cx={x1 + (barWidth - 2) / 2}
                     cy={ticketY - 8}
@@ -262,47 +261,49 @@ export default function RevenueBarChart() {
             }}
           >
             <div className="tooltip-top-row">
-              <span className="tooltip-time">{currentDataset[hoveredIndex].time}</span>
+              <span className="tooltip-time">{currentDataset[hoveredIndex].label}</span>
               <span className="tooltip-hall">{currentDataset[hoveredIndex].hall}</span>
             </div>
             <div className="tooltip-film">{currentDataset[hoveredIndex].film}</div>
             <div className="tooltip-divider" />
             <div className="tooltip-stat-row">
               <span className="stat-name">
-                <span className="dot dot-indigo" /> 70mm Tickets:
+                <span className="dot dot-indigo" /> Tickets ({currentDataset[hoveredIndex].seats} seats):
               </span>
-              <span className="stat-val font-mono">${currentDataset[hoveredIndex].tickets}</span>
+              <span className="stat-val font-mono">{formatLKR(currentDataset[hoveredIndex].tickets)}</span>
             </div>
             <div className="tooltip-stat-row">
               <span className="stat-name">
                 <span className="dot dot-emerald" /> In-Seat Dining:
               </span>
-              <span className="stat-val font-mono">${currentDataset[hoveredIndex].dining}</span>
+              <span className="stat-val font-mono">{formatLKR(currentDataset[hoveredIndex].dining)}</span>
             </div>
             <div className="tooltip-total-row">
-              <span>Gross Velocity:</span>
+              <span>Total:</span>
               <span className="tooltip-total-val font-mono">
-                ${currentDataset[hoveredIndex].total.toFixed(2)}
+                {formatLKR(currentDataset[hoveredIndex].total)}
               </span>
             </div>
           </div>
         )}
       </div>
 
+      )}
+
       {/* Chart Footer Legend */}
       <div className="chart-footer-legend">
         <div className="legend-items">
           <div className="legend-item">
             <span className="legend-color-box indigo-grad" />
-            <span className="legend-label">70mm Presentation Passes</span>
+            <span className="legend-label">Tickets</span>
           </div>
           <div className="legend-item">
             <span className="legend-color-box emerald-grad" />
-            <span className="legend-label">VIP Concierge & Dining Concessions</span>
+            <span className="legend-label">In-seat extras</span>
           </div>
         </div>
         <span className="legend-helper-text">
-          Hover any column to inspect live admissions & concession breakdown
+          Hover a column for details
         </span>
       </div>
     </div>

@@ -5553,3 +5553,35 @@
     flex-wrap: nowrap;
   }
 }
+
+/* ---- Live data states (admin API) ---- */
+.chart-empty-state {
+  display: grid;
+  place-items: center;
+  min-height: 140px;
+  padding: 1.5rem;
+  border: 1px dashed var(--adm-border, rgba(212, 175, 55, 0.2));
+  border-radius: 12px;
+  color: var(--adm-text-muted, #8a8678);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.kpi-delta.negative {
+  color: #f2a7a7;
+  background: rgba(220, 80, 80, 0.12);
+}
+
+.film-action-btn.delete-btn:disabled,
+.admin-submit-btn:disabled,
+.admin-cancel-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.admin-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}

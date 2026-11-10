@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Film,
@@ -12,9 +12,8 @@ import {
   Sparkles,
   AlertTriangle,
 } from 'lucide-react';
-import { movieService } from '../services/movieService';
-import { adminDataService } from '../services/adminDataService';
-import { adminBookingsApi, computeDashboardMetrics } from '../services/adminBookingsApi';
+import { adminApi } from '../services/adminApi';
+import { adminBookingsApi } from '../services/adminBookingsApi';
 import { uploadImageToCloudinary } from '../../../lib/cloudinary';
 
 // Executive Dashboard Components
@@ -26,12 +25,6 @@ import AdminBookingsTab from '../components/AdminBookingsTab';
 import AdminAuditoriumsTab from '../components/AdminAuditoriumsTab';
 import AdminConciergeTab from '../components/AdminConciergeTab';
 import TabErrorBoundary from '../components/TabErrorBoundary';
-
-const DEFAULT_AUDITORIUMS = [
-  'Auditorium 01 — The Sovereign Soundstage',
-  'Auditorium 02 — The Director’s Loge',
-  'Auditorium 03 — The Quantum Chamber',
-];
 
 const DEFAULT_FORMATS = [
   '70MM DUAL LASER • DOLBY ATMOS',
@@ -53,6 +46,35 @@ const PRESET_SHOWTIMES = [
   '22:30',
   '23:00',
 ];
+
+const DEFAULT_BACKDROP = '/images/luxury_cinema_interior.jpg';
+const POLL_MS = 30000;
+const MIN_TEMP = 17;
+const MAX_TEMP = 26;
+
+const emptyForm = (auditorium = '') => ({
+  title: '',
+  format: DEFAULT_FORMATS[0],
+  rating: 'PG-13',
+  runtime: '150 MIN',
+  director: '',
+  auditorium,
+  tagline: '',
+  description: '',
+  backdrop: DEFAULT_BACKDROP,
+  showtimes: ['14:30', '17:45'],
+  status: 'Now Showing',
+});
+
+/** "9:30" -> "09:30"; returns null when it is not a valid 24-hour time. */
+function normaliseTime(value) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h > 23 || min > 59) return null;
+  return `${String(h).padStart(2, '0')}:${m[2]}`;
+}
 
 export default function AdminFilmsPage() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -91,13 +113,14 @@ export default function AdminFilmsPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // Core Data
+  // Core data, all loaded from the backend
   const [movies, setMovies] = useState([]);
-  const [bookings, setBookings] = useState([]);
-  const [bookingsError, setBookingsError] = useState(null);
-  const [orders, setOrders] = useState(() => adminDataService.getConciergeOrders());
-  const [auditoriums, setAuditoriums] = useState(() => adminDataService.getAuditoriums());
   const [loading, setLoading] = useState(true);
+  const [bookings, setBookings] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [auditoriums, setAuditoriums] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loadError, setLoadError] = useState(null);
 
   // Cloudinary Upload State
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -106,98 +129,75 @@ export default function AdminFilmsPage() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMovieId, setEditingMovieId] = useState(null);
+  const [saving, setSaving] = useState(false);
   const [notification, setNotification] = useState(null);
+  const notifyTimer = useRef(null);
 
   // Showtimes Checkbox State
   const [availableShowtimes, setAvailableShowtimes] = useState(PRESET_SHOWTIMES);
   const [customTimeInput, setCustomTimeInput] = useState('');
 
-  // Form State
-  const [formData, setFormData] = useState({
-    title: '',
-    format: DEFAULT_FORMATS[0],
-    rating: 'PG-13',
-    runtime: '150 MIN',
-    director: '',
-    auditorium: DEFAULT_AUDITORIUMS[0],
-    tagline: '',
-    description: '',
-    backdrop: '/images/luxury_cinema_interior.jpg',
-    showtimes: ['14:30', '17:45', '20:30'],
-    status: 'Now Showing',
-  });
-
+  const [formData, setFormData] = useState(() => emptyForm());
   const [formErrors, setFormErrors] = useState({});
 
+  const notify = useCallback((type, message, ms = 4500) => {
+    clearTimeout(notifyTimer.current);
+    setNotification({ type, message });
+    notifyTimer.current = setTimeout(() => setNotification(null), ms);
+  }, []);
 
-  // Paid bookings come from the database via the backend.
-  const loadBookings = async () => {
+  useEffect(() => () => clearTimeout(notifyTimer.current), []);
+
+  const loadMovies = useCallback(async () => {
     try {
-      setBookings(await adminBookingsApi.list());
-      setBookingsError(null);
+      setMovies(await adminApi.listMovies());
     } catch (err) {
-      setBookingsError(err.message);
+      setLoadError(err.message);
+    } finally {
+      setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadBookings();
-    const id = setInterval(loadBookings, 30000);
-    return () => clearInterval(id);
   }, []);
 
-  const metrics = useMemo(
-    () => computeDashboardMetrics(bookings, orders, auditoriums),
-    [bookings, orders, auditoriums]
-  );
+  /** Everything that changes while the cinema is open. */
+  const loadLive = useCallback(async () => {
+    const results = await Promise.allSettled([
+      adminBookingsApi.list(),
+      adminApi.listOrders(),
+      adminApi.listAuditoriums(),
+      adminApi.getStats(),
+    ]);
+    const [b, o, a, s] = results;
+    if (b.status === 'fulfilled') setBookings(b.value);
+    if (o.status === 'fulfilled') setOrders(o.value);
+    if (a.status === 'fulfilled') setAuditoriums(a.value);
+    if (s.status === 'fulfilled') setStats(s.value);
+    const failed = results.find((r) => r.status === 'rejected');
+    setLoadError(failed ? failed.reason.message : null);
+  }, []);
 
-  // Load initial repertory movies
+  const reloadAll = useCallback(() => {
+    loadMovies();
+    loadLive();
+  }, [loadMovies, loadLive]);
+
   useEffect(() => {
-    let isMounted = true;
-    movieService.getAllMovies().then(({ data }) => {
-      if (isMounted) {
-        setMovies(data || []);
-        setLoading(false);
-      }
-    });
+    // Initial load, then keep the live numbers fresh.
+    const first = setTimeout(reloadAll, 0);
+    const id = setInterval(loadLive, POLL_MS);
     return () => {
-      isMounted = false;
+      clearTimeout(first);
+      clearInterval(id);
     };
-  }, []);
+  }, [reloadAll, loadLive]);
 
-  const refreshMovies = async () => {
-    const { data } = await movieService.getAllMovies();
-    setMovies(data || []);
-  };
-
-  const handleRestoreDefaults = () => {
-    const defaults = movieService.resetToDefaultCatalog();
-    setMovies(defaults);
-    setNotification({
-      type: 'success',
-      message: 'Default 70mm repertory catalog restored successfully!',
-    });
-    setTimeout(() => setNotification(null), 4000);
-  };
+  const hallLabels = auditoriums.map((a) => a.label);
 
   const handleOpenAddModal = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setEditingMovieId(null);
     setAvailableShowtimes(PRESET_SHOWTIMES);
     setCustomTimeInput('');
-    setFormData({
-      title: '',
-      format: DEFAULT_FORMATS[0],
-      rating: 'PG-13',
-      runtime: '150 MIN',
-      director: '',
-      auditorium: DEFAULT_AUDITORIUMS[0],
-      tagline: '',
-      description: '',
-      backdrop: '/images/luxury_cinema_interior.jpg',
-      showtimes: ['14:30', '17:45', '20:30'],
-      status: 'Now Showing',
-    });
+    setFormData(emptyForm(hallLabels[0] || ''));
     setFormErrors({});
     setIsModalOpen(true);
   };
@@ -205,27 +205,20 @@ export default function AdminFilmsPage() {
   const handleOpenEditModal = (movie) => {
     setEditingMovieId(movie.id);
     setCustomTimeInput('');
-
-    const movieTimes = Array.isArray(movie.showtimes)
-      ? movie.showtimes
-      : (typeof movie.showtimes === 'string'
-          ? movie.showtimes.split(',').map((t) => t.trim()).filter(Boolean)
-          : ['14:30', '17:45', '20:30']);
-
+    const movieTimes = Array.isArray(movie.showtimes) ? movie.showtimes : [];
     // Merge any custom times present in this film that aren't in preset
-    const mergedTimes = Array.from(new Set([...PRESET_SHOWTIMES, ...movieTimes])).sort();
-    setAvailableShowtimes(mergedTimes);
+    setAvailableShowtimes(Array.from(new Set([...PRESET_SHOWTIMES, ...movieTimes])).sort());
 
     setFormData({
       title: movie.title,
-      format: movie.format,
-      rating: movie.rating,
-      runtime: movie.runtime,
+      format: movie.format || '',
+      rating: movie.rating || 'PG-13',
+      runtime: movie.runtime || '',
       director: movie.director || '',
       auditorium: movie.auditorium,
       tagline: movie.tagline || '',
       description: movie.description || '',
-      backdrop: movie.backdrop || '/images/luxury_cinema_interior.jpg',
+      backdrop: movie.backdrop || DEFAULT_BACKDROP,
       showtimes: movieTimes,
       status: movie.status || 'Now Showing',
     });
@@ -236,171 +229,126 @@ export default function AdminFilmsPage() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    if (formErrors[name]) {
-      setFormErrors((prev) => ({ ...prev, [name]: null }));
+    if (formErrors[name] || formErrors.form) {
+      setFormErrors((prev) => ({ ...prev, [name]: null, form: null }));
     }
+  };
+
+  const clearShowtimeError = () => {
+    if (formErrors.showtimes) setFormErrors((prev) => ({ ...prev, showtimes: null }));
   };
 
   const handleToggleShowtime = (time) => {
     setFormData((prev) => {
       const current = Array.isArray(prev.showtimes) ? prev.showtimes : [];
-      const exists = current.includes(time);
-      const updated = exists
-        ? current.filter((t) => t !== time)
-        : [...current, time].sort();
+      const updated = current.includes(time) ? current.filter((t) => t !== time) : [...current, time].sort();
       return { ...prev, showtimes: updated };
     });
-    if (formErrors.showtimes) {
-      setFormErrors((prev) => ({ ...prev, showtimes: null }));
-    }
+    clearShowtimeError();
   };
 
   const handleSelectPresetShowtimes = (presetKey) => {
     if (presetKey === 'prime') {
-      setFormData((prev) => ({ ...prev, showtimes: ['14:30', '17:45', '20:30', '21:15'] }));
+      setFormData((prev) => ({ ...prev, showtimes: ['14:30', '17:45', '21:15'] }));
     } else if (presetKey === 'all') {
       setFormData((prev) => ({ ...prev, showtimes: [...availableShowtimes] }));
     } else if (presetKey === 'clear') {
       setFormData((prev) => ({ ...prev, showtimes: [] }));
     }
-    if (formErrors.showtimes) {
-      setFormErrors((prev) => ({ ...prev, showtimes: null }));
-    }
+    clearShowtimeError();
   };
 
   const handleAddCustomTime = (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    const cleanTime = customTimeInput.trim();
-    if (!cleanTime) return;
-
+    if (!customTimeInput.trim()) return;
+    const cleanTime = normaliseTime(customTimeInput);
+    if (!cleanTime) {
+      setFormErrors((prev) => ({ ...prev, showtimes: 'Use 24-hour time, for example 18:30.' }));
+      return;
+    }
     if (!availableShowtimes.includes(cleanTime)) {
       setAvailableShowtimes((prev) => [...prev, cleanTime].sort());
     }
-
     setFormData((prev) => {
       const current = Array.isArray(prev.showtimes) ? prev.showtimes : [];
-      if (!current.includes(cleanTime)) {
-        return { ...prev, showtimes: [...current, cleanTime].sort() };
-      }
-      return prev;
+      return current.includes(cleanTime) ? prev : { ...prev, showtimes: [...current, cleanTime].sort() };
     });
-
     setCustomTimeInput('');
+    clearShowtimeError();
   };
 
   const handleImageFileChange = async (e) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
 
-    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+    if (!import.meta.env.VITE_CLOUDINARY_CLOUD_NAME?.trim()) {
+      notify('warning', 'Poster upload needs VITE_CLOUDINARY_CLOUD_NAME in frontend/.env. You can paste an image link instead.', 6000);
+      return;
+    }
 
-    if (cloudName && cloudName.trim()) {
-      try {
-        setUploadingImage(true);
-        setUploadProgress(15);
-
-        const result = await uploadImageToCloudinary(file, {
-          onProgress: (percent) => setUploadProgress(percent),
-        });
-
-        setFormData((prev) => ({ ...prev, backdrop: result.url }));
-        setNotification({
-          type: 'success',
-          message: 'Poster uploaded to Cloudinary CDN! Image URL ready.',
-        });
-        setTimeout(() => setNotification(null), 4000);
-      } catch (err) {
-        setNotification({
-          type: 'error',
-          message: `Cloudinary upload failed: ${err.message}`,
-        });
-
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setFormData((prev) => ({ ...prev, backdrop: reader.result }));
-        };
-        reader.readAsDataURL(file);
-      } finally {
-        setUploadingImage(false);
-        setUploadProgress(0);
-      }
-    } else {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData((prev) => ({ ...prev, backdrop: reader.result }));
-      };
-      reader.readAsDataURL(file);
-
-      setNotification({
-        type: 'warning',
-        message: 'Cloudinary Cloud Name is not configured in .env yet. Using local preview.',
+    try {
+      setUploadingImage(true);
+      setUploadProgress(15);
+      const result = await uploadImageToCloudinary(file, {
+        onProgress: (percent) => setUploadProgress(percent),
       });
-      setTimeout(() => setNotification(null), 5000);
+      setFormData((prev) => ({ ...prev, backdrop: result.url }));
+      if (formErrors.backdrop) setFormErrors((prev) => ({ ...prev, backdrop: null }));
+      notify('success', 'Poster uploaded.');
+    } catch (err) {
+      notify('error', `Poster upload failed: ${err.message}`, 6000);
+    } finally {
+      setUploadingImage(false);
+      setUploadProgress(0);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (saving) return;
 
     const errors = {};
     if (!formData.title.trim()) errors.title = 'Film title is required.';
     if (!formData.runtime.trim()) errors.runtime = 'Runtime is required.';
     if (!formData.director.trim()) errors.director = 'Director is required.';
-
-    const showtimesArray = Array.isArray(formData.showtimes)
-      ? formData.showtimes
-      : (typeof formData.showtimes === 'string'
-          ? formData.showtimes.split(',').map((t) => t.trim()).filter(Boolean)
-          : []);
-
-    if (showtimesArray.length === 0) {
-      errors.showtimes = 'Please select at least one daily showtime for this presentation.';
-    }
-
+    if (!formData.auditorium) errors.auditorium = 'Choose an auditorium.';
+    if (!formData.showtimes.length) errors.showtimes = 'Select at least one daily showtime.';
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
 
-    const moviePayload = {
-      ...formData,
-      showtimes: showtimesArray,
-    };
-
-    if (editingMovieId) {
-      await movieService.updateMovie(editingMovieId, moviePayload);
-      setNotification({
-        type: 'success',
-        message: `“${formData.title}” has been successfully updated.`,
-      });
-    } else {
-      await movieService.createMovie(moviePayload);
-      setNotification({
-        type: 'success',
-        message: `“${formData.title}” has been published to CINEVERSE repertory!`,
-      });
+    setSaving(true);
+    try {
+      if (editingMovieId) {
+        await adminApi.updateMovie(editingMovieId, formData);
+        notify('success', `“${formData.title}” has been updated.`);
+      } else {
+        await adminApi.createMovie(formData);
+        notify('success', `“${formData.title}” is now in the CINEVERSE repertory.`);
+      }
+      setIsModalOpen(false);
+      await loadMovies();
+      loadLive();
+    } catch (err) {
+      // Server validation points at the field to fix; keep the form open.
+      const field = err.data?.field;
+      setFormErrors(field ? { [field]: err.message } : { form: err.message });
+    } finally {
+      setSaving(false);
     }
-
-    setIsModalOpen(false);
-    await refreshMovies();
-
-    setTimeout(() => {
-      setNotification(null);
-    }, 4500);
   };
 
   const handleDelete = async (movie) => {
-    if (window.confirm(`Are you certain you wish to withdraw “${movie.title}” from repertory?`)) {
-      await movieService.deleteMovie(movie.id);
-      setNotification({
-        type: 'success',
-        message: `“${movie.title}” has been removed from repertory.`,
-      });
-      await refreshMovies();
-
-      setTimeout(() => {
-        setNotification(null);
-      }, 4500);
+    if (!window.confirm(`Remove “${movie.title}” from the repertory? This cannot be undone.`)) return;
+    try {
+      await adminApi.deleteMovie(movie.id);
+      notify('success', `“${movie.title}” has been removed.`);
+      await loadMovies();
+      loadLive();
+    } catch (err) {
+      notify('error', err.message, 7000);
     }
   };
 
@@ -415,56 +363,62 @@ export default function AdminFilmsPage() {
       setBookings((prev) => prev.map((b) => (b.id === bookingRef ? saved : b)));
     } catch (err) {
       setBookings((prev) => prev.map((b) => (b.id === bookingRef ? target : b)));
-      setNotification({ type: 'error', message: `Check-in not saved: ${err.message}` });
-      setTimeout(() => setNotification(null), 5000);
+      notify('error', `Check-in not saved: ${err.message}`, 5000);
     }
   };
 
-  // Update concierge order status
-  const handleUpdateOrderStatus = (orderId, newStatus) => {
-    const updated = adminDataService.updateOrderStatus(orderId, newStatus);
-    setOrders(updated);
+  // In-seat service order status
+  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    const target = orders.find((o) => o.id === orderId);
+    if (!target) return;
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)));
+    try {
+      const saved = await adminApi.setOrderStatus(target.bookingId, newStatus);
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? saved : o)));
+    } catch (err) {
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? target : o)));
+      notify('error', `Order not updated: ${err.message}`, 5000);
+    }
   };
 
-  // Soundstage / Auditorium Interactive Controls
-  const handleUpdateHallStatus = (id, status) => {
-    const updated = adminDataService.setHallStatus(id, status);
-    setAuditoriums(updated);
-    setNotification({
-      type: 'success',
-      message: `Auditorium ${id.replace('aud-', '')} switched to "${status}" mode.`,
-    });
-    setTimeout(() => setNotification(null), 3500);
+  /** Apply a hall change straight away, then keep what the server saved. */
+  const updateHall = async (id, changes, successMessage) => {
+    const before = auditoriums;
+    setAuditoriums((prev) => prev.map((a) => (a.id === id ? { ...a, ...changes } : a)));
+    try {
+      setAuditoriums(await adminApi.updateAuditorium(id, changes));
+      if (successMessage) notify('success', successMessage, 3500);
+    } catch (err) {
+      setAuditoriums(before);
+      notify('error', `Hall not updated: ${err.message}`, 5000);
+    }
   };
 
-  const handleToggleProjector = (id) => {
-    const updated = adminDataService.toggleProjectorPower(id);
-    setAuditoriums(updated);
-  };
+  const hallById = (id) => auditoriums.find((a) => a.id === id);
 
-  const handleSetLighting = (id, preset) => {
-    const updated = adminDataService.setHallLighting(id, preset);
-    setAuditoriums(updated);
-  };
+  const handleUpdateHallStatus = (id, status) =>
+    updateHall(id, { status }, `Auditorium ${hallById(id)?.number || ''} is now in “${status}” mode.`);
 
-  const handleSetAudio = (id, preset) => {
-    const updated = adminDataService.setHallAudioPreset(id, preset);
-    setAuditoriums(updated);
-  };
+  const handleToggleProjector = (id) => updateHall(id, { projectorOn: !hallById(id)?.projectorOn });
+
+  const handleSetLighting = (id, lightingPreset) => updateHall(id, { lightingPreset });
+
+  const handleSetAudio = (id, audioPreset) => updateHall(id, { audioPreset });
 
   const handleAdjustTemp = (id, delta) => {
-    const updated = adminDataService.adjustHallTemperature(id, delta);
-    setAuditoriums(updated);
+    const hall = hallById(id);
+    if (!hall) return;
+    const temperature = Math.min(MAX_TEMP, Math.max(MIN_TEMP, Math.round((hall.temperature + delta) * 10) / 10));
+    if (temperature !== hall.temperature) updateHall(id, { temperature });
   };
 
-  const handleEmergencyLighting = () => {
-    const updated = adminDataService.triggerEmergencyLightingAll();
-    setAuditoriums(updated);
-    setNotification({
-      type: 'error',
-      message: '🚨 EMERGENCY: 100% Full House Lighting activated across all soundstages!',
-    });
-    setTimeout(() => setNotification(null), 5000);
+  const handleEmergencyLighting = async () => {
+    try {
+      setAuditoriums(await adminApi.houseLights());
+      notify('error', 'House lights are at 100% in every auditorium.', 6000);
+    } catch (err) {
+      notify('error', `House lights not changed: ${err.message}`, 6000);
+    }
   };
 
 
@@ -529,11 +483,11 @@ export default function AdminFilmsPage() {
             </div>
           )}
 
-          {bookingsError && (activeTab === 'overview' || activeTab === 'bookings') && (
+          {loadError && (
             <div className="admin-toast-banner toast-error" role="alert">
               <AlertTriangle size={18} />
-              <span>Could not load bookings from the server: {bookingsError}</span>
-              <button type="button" className="toast-close" onClick={loadBookings}>
+              <span>Could not load dashboard data: {loadError}</span>
+              <button type="button" className="toast-close" onClick={reloadAll}>
                 Retry
               </button>
             </div>
@@ -542,9 +496,8 @@ export default function AdminFilmsPage() {
           {/* TAB 1: EXECUTIVE OVERVIEW */}
           {activeTab === 'overview' && (
             <AdminOverviewTab
-              metrics={metrics}
+              stats={stats}
               bookings={bookings}
-              movies={movies}
               onNavigateTab={setActiveTab}
               onOpenUploadModal={handleOpenAddModal}
             />
@@ -558,7 +511,6 @@ export default function AdminFilmsPage() {
               onOpenAddModal={handleOpenAddModal}
               onOpenEditModal={handleOpenEditModal}
               onDeleteMovie={handleDelete}
-              onRestoreDefaults={handleRestoreDefaults}
             />
           )}
 
@@ -698,12 +650,20 @@ export default function AdminFilmsPage() {
                       onChange={handleChange}
                       className="admin-input admin-select"
                     >
-                      {DEFAULT_AUDITORIUMS.map((aud, i) => (
-                        <option key={i} value={aud}>
+                      {!hallLabels.includes(formData.auditorium) && (
+                        <option value={formData.auditorium}>
+                          {formData.auditorium || 'Choose an auditorium'}
+                        </option>
+                      )}
+                      {hallLabels.map((aud) => (
+                        <option key={aud} value={aud}>
                           {aud}
                         </option>
                       ))}
                     </select>
+                    {formErrors.auditorium && (
+                      <span className="admin-field-error">{formErrors.auditorium}</span>
+                    )}
                   </div>
                 </div>
 
@@ -739,8 +699,11 @@ export default function AdminFilmsPage() {
                       value={formData.runtime}
                       onChange={handleChange}
                       placeholder="e.g. 155 MIN"
-                      className="admin-input"
+                      className={`admin-input ${formErrors.runtime ? 'input-error' : ''}`}
                     />
+                    {formErrors.runtime && (
+                      <span className="admin-field-error">{formErrors.runtime}</span>
+                    )}
                   </div>
 
                   <div className="admin-field-group">
@@ -773,7 +736,7 @@ export default function AdminFilmsPage() {
                       value={formData.backdrop}
                       onChange={handleChange}
                       placeholder="https://res.cloudinary.com/... or /images/..."
-                      className="admin-input"
+                      className={`admin-input ${formErrors.backdrop ? 'input-error' : ''}`}
                     />
                     <label
                       className={`admin-file-upload-btn ${uploadingImage ? 'is-uploading' : ''}`}
@@ -799,6 +762,10 @@ export default function AdminFilmsPage() {
                       />
                     </label>
                   </div>
+
+                  {formErrors.backdrop && (
+                    <span className="admin-field-error">{formErrors.backdrop}</span>
+                  )}
 
                   {uploadingImage && (
                     <div className="cloudinary-progress-bar">
@@ -962,18 +929,31 @@ export default function AdminFilmsPage() {
                   />
                 </div>
 
+                {formErrors.form && (
+                  <div className="admin-toast-banner toast-error" role="alert">
+                    <AlertTriangle size={16} />
+                    <span>{formErrors.form}</span>
+                  </div>
+                )}
+
                 {/* Modal Actions */}
                 <div className="admin-modal-actions">
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
                     className="admin-cancel-btn"
+                    disabled={saving}
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="admin-submit-btn">
+                  <button type="submit" className="admin-submit-btn" disabled={saving || uploadingImage}>
+                    {saving && <Loader2 size={15} className="spin-loader" />}
                     <span>
-                      {editingMovieId ? 'Update Film Presentation' : 'Publish Film to Cineverse'}
+                      {saving
+                        ? 'Saving…'
+                        : editingMovieId
+                          ? 'Update Film Presentation'
+                          : 'Publish Film to Cineverse'}
                     </span>
                   </button>
                 </div>

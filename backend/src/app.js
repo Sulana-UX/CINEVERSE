@@ -3,7 +3,7 @@ import cors from 'cors';
 import { env, isCloudinaryConfigured, isSmtpConfigured } from './config/env.js';
 import { isSupabaseAdminConfigured } from './lib/supabaseAdmin.js';
 import { activeProvider } from './services/payments/index.js';
-import adminRoutes from './routes/admin.routes.js';
+import adminRoutes from './routes/admin/index.js';
 import authRoutes from './routes/auth.routes.js';
 import bookingRoutes from './routes/booking.routes.js';
 import paymentRoutes from './routes/payments.routes.js';
@@ -54,7 +54,7 @@ export function createApp() {
     // Table / function missing: the SQL migrations have not been run yet.
     if (['PGRST202', 'PGRST205', '42P01', '42883'].includes(err.code)) {
       return res.status(503).json({
-        error: 'Booking database is not set up yet. Run backend/supabase/migrations/002_bookings.sql in Supabase.',
+        error: 'The database is not fully set up. Run the SQL files in backend/supabase/migrations in Supabase (see README).',
       });
     }
     const status = err.type === 'entity.parse.failed' ? 400 : 500;

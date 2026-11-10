@@ -34,19 +34,33 @@ export const SEAT_TIERS = {
 };
 
 /**
- * Rows from the screen (A) to the back (H). `aisleAfter` splits a row into
- * left / right blocks. Seat ids are `${row}${number}`, e.g. "D7".
+ * Seat plans. Rows run from the screen (A) to the back. `aisleAfter` splits a
+ * row into left / right blocks. Seat ids are `${row}${number}`, e.g. "D7".
  */
+const rows = (letters, tier, seats, aisleAfter) =>
+  letters.split('').map((row) => ({ row, tier, seats, aisleAfter }));
+
+/** Used by any hall without its own plan below. 76 seats. */
 export const SEAT_LAYOUT = [
-  { row: 'A', tier: 'ORCHESTRA', seats: 10, aisleAfter: 5 },
-  { row: 'B', tier: 'ORCHESTRA', seats: 10, aisleAfter: 5 },
-  { row: 'C', tier: 'ORCHESTRA', seats: 10, aisleAfter: 5 },
-  { row: 'D', tier: 'PREMIER', seats: 10, aisleAfter: 5 },
-  { row: 'E', tier: 'PREMIER', seats: 10, aisleAfter: 5 },
-  { row: 'F', tier: 'PREMIER', seats: 10, aisleAfter: 5 },
-  { row: 'G', tier: 'LOGE', seats: 8, aisleAfter: 4 },
-  { row: 'H', tier: 'LOGE', seats: 8, aisleAfter: 4 },
+  ...rows('ABC', 'ORCHESTRA', 10, 5),
+  ...rows('DEF', 'PREMIER', 10, 5),
+  ...rows('GH', 'LOGE', 8, 4),
 ];
+
+/** Each hall's plan, keyed by auditorium number ("01" = "Auditorium 01 — ..."). */
+export const HALL_LAYOUTS = {
+  // The Sovereign Soundstage: the flagship, largest hall. 100 seats.
+  '01': [...rows('ABCD', 'ORCHESTRA', 12, 6), ...rows('EFG', 'PREMIER', 12, 6), ...rows('HI', 'LOGE', 8, 4)],
+  // The Director's Loge: small and private. 44 seats.
+  '02': [...rows('AB', 'ORCHESTRA', 8, 4), ...rows('CD', 'PREMIER', 8, 4), ...rows('EF', 'LOGE', 6, 3)],
+  // The Quantum Chamber. 76 seats.
+  '03': SEAT_LAYOUT,
+};
+
+/** The seat plan for a hall number ("02"), falling back to SEAT_LAYOUT. */
+export function layoutFor(hallNumber) {
+  return HALL_LAYOUTS[hallNumber] || SEAT_LAYOUT;
+}
 
 export const EXTRAS = [
   {
@@ -79,22 +93,41 @@ export const EXTRAS = [
   },
 ];
 
-const seatIndex = new Map();
-for (const r of SEAT_LAYOUT) {
-  for (let n = 1; n <= r.seats; n += 1) {
-    seatIndex.set(`${r.row}${n}`, { id: `${r.row}${n}`, row: r.row, number: n, tier: r.tier });
+const seatIndexes = new Map();
+function seatIndexFor(layout) {
+  if (!seatIndexes.has(layout)) {
+    const index = new Map();
+    for (const r of layout) {
+      for (let n = 1; n <= r.seats; n += 1) {
+        index.set(`${r.row}${n}`, { id: `${r.row}${n}`, row: r.row, number: n, tier: r.tier });
+      }
+    }
+    seatIndexes.set(layout, index);
   }
+  return seatIndexes.get(layout);
 }
 
-export function getSeat(seatId) {
-  return seatIndex.get(seatId) || null;
+/** A seat in a hall's plan, or null if that hall has no such seat. */
+export function getSeat(seatId, hallNumber) {
+  return seatIndexFor(layoutFor(hallNumber)).get(seatId) || null;
+}
+
+/** Seats in one screening of a hall. */
+export function seatCount(hallNumber) {
+  return seatIndexFor(layoutFor(hallNumber)).size;
+}
+
+/** Seats per tier in one screening of a hall, e.g. { ORCHESTRA: 48, PREMIER: 36, LOGE: 16 }. */
+export function tierCapacity(hallNumber) {
+  const counts = Object.fromEntries(Object.keys(SEAT_TIERS).map((k) => [k, 0]));
+  for (const r of layoutFor(hallNumber)) counts[r.tier] += r.seats;
+  return counts;
 }
 
 export function getExtra(extraId) {
   return EXTRAS.find((e) => e.id === extraId) || null;
 }
 
-export const TOTAL_SEATS = seatIndex.size;
 
 /**
  * Cancelling a PAID booking. Rules are checked in order; the first one whose

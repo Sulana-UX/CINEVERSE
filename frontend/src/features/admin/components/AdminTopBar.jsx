@@ -3,7 +3,6 @@ import { Clock, Menu } from 'lucide-react';
 
 export default function AdminTopBar({
   activeTab,
-  onOpenUploadModal,
   onToggleMobileSidebar,
 }) {
   const [timeString, setTimeString] = useState('');

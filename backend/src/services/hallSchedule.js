@@ -1,16 +1,7 @@
-import { BOOKABLE_STATUSES, SEAT_LAYOUT, SEAT_TIERS } from '../config/booking.js';
+import { BOOKABLE_STATUSES, seatCount } from '../config/booking.js';
 import { showStartsAt } from '../utils/showtime.js';
 import { auditoriumLabel, auditoriumNumber, normaliseShowtimes, runtimeMinutes } from './movieCatalog.js';
 
-/** Every hall uses the same seat plan. */
-export const SEATS_PER_SHOW = SEAT_LAYOUT.reduce((n, row) => n + row.seats, 0);
-
-export const TIER_CAPACITY = Object.fromEntries(
-  Object.keys(SEAT_TIERS).map((key) => [
-    key,
-    SEAT_LAYOUT.filter((row) => row.tier === key).reduce((n, row) => n + row.seats, 0),
-  ])
-);
 
 export function toClientAuditorium(row) {
   return {
@@ -26,7 +17,7 @@ export function toClientAuditorium(row) {
     audioPreset: row.audio_preset,
     lightingPreset: row.lighting_preset,
     temperature: Number(row.temperature),
-    totalSeats: SEATS_PER_SHOW,
+    totalSeats: seatCount(row.number),
     updatedAt: row.updated_at,
   };
 }

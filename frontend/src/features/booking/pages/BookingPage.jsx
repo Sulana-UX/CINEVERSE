@@ -12,7 +12,7 @@ import ShowtimePicker from '../components/ShowtimePicker';
 import SeatMap from '../components/SeatMap';
 import ExtrasPicker from '../components/ExtrasPicker';
 import BookingSummary from '../components/BookingSummary';
-import { BOOKING_STEPS, computeTotals } from '../utils/bookingFlow';
+import { BOOKING_STEPS, computeTotals, layoutForMovie } from '../utils/bookingFlow';
 import MobileCheckoutBar from '../components/MobileCheckoutBar';
 import { bookingApi, redirectToCheckout } from '../services/bookingApi';
 import {
@@ -344,7 +344,7 @@ export default function BookingPage() {
             </span>
           </div>
           <SeatMap
-            layout={config.layout}
+            layout={layoutForMovie(config, movie)}
             tiers={config.tiers}
             takenSeats={takenSeats}
             selectedSeats={selectedSeats}

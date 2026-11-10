@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { sendMail } from '../services/mailer.js';
-import { canIssueOtp, discardOtp, issueOtp, verifyOtp } from '../services/otpStore.js';
+import { discardOtp, issueOtp, verifyOtp } from '../services/otpStore.js';
+import { passwordProblem } from '../utils/password.js';
 import { otpEmail } from '../templates/otpEmail.js';
 import { isEmail } from '../utils/escapeHtml.js';
 import { supabaseAdmin } from '../lib/supabaseAdmin.js';
@@ -8,34 +9,37 @@ import { supabaseAdmin } from '../lib/supabaseAdmin.js';
 const router = Router();
 
 /** POST /api/auth/otp/send  { email, fullName } */
-router.post('/otp/send', async (req, res) => {
-  const { email, fullName } = req.body || {};
-  if (!isEmail(email)) {
-    return res.status(400).json({ success: false, error: 'A valid email address is required.' });
+router.post('/otp/send', async (req, res, next) => {
+  try {
+    const { email, fullName } = req.body || {};
+    if (!isEmail(email)) {
+      return res.status(400).json({ success: false, error: 'A valid email address is required.' });
+    }
+
+    const issued = await issueOtp(email);
+    if (!issued.ok) {
+      return res.status(429).json({
+        success: false,
+        error: `Please wait ${issued.retryAfterSec}s before requesting another code.`,
+      });
+    }
+
+    const { subject, html } = otpEmail({ fullName, otp: issued.otp });
+    const result = await sendMail({ to: email, subject, html });
+
+    if (!result.sent) {
+      await discardOtp(email);
+      return res.status(502).json({
+        success: false,
+        emailSent: false,
+        error: `Unable to send the verification email (${result.error}).`,
+      });
+    }
+
+    return res.json({ success: true, emailSent: true });
+  } catch (err) {
+    return next(err);
   }
-
-  const gate = canIssueOtp(email);
-  if (!gate.ok) {
-    return res.status(429).json({
-      success: false,
-      error: `Please wait ${gate.retryAfterSec}s before requesting another code.`,
-    });
-  }
-
-  const otp = issueOtp(email);
-  const { subject, html } = otpEmail({ fullName, otp });
-  const result = await sendMail({ to: email, subject, html });
-
-  if (!result.sent) {
-    discardOtp(email);
-    return res.status(502).json({
-      success: false,
-      emailSent: false,
-      error: `Unable to send the verification email (${result.error}).`,
-    });
-  }
-
-  return res.json({ success: true, emailSent: true });
 });
 
 /**
@@ -53,15 +57,16 @@ router.post('/register', async (req, res, next) => {
     if (!isEmail(email)) {
       return res.status(400).json({ success: false, error: 'A valid email address is required.' });
     }
-    if (typeof password !== 'string' || password.length < 8) {
-      return res.status(400).json({ success: false, error: 'Password must be at least 8 characters.' });
+    const weak = passwordProblem(password);
+    if (weak) {
+      return res.status(400).json({ success: false, error: weak });
     }
     const name = String(fullName || '').trim().slice(0, 80);
     if (!name) {
       return res.status(400).json({ success: false, error: 'Please enter your full name.' });
     }
 
-    const check = verifyOtp(email, otp || '');
+    const check = await verifyOtp(email, otp || '');
     if (!check.ok) {
       return res.status(400).json({ success: false, error: check.error });
     }
@@ -112,18 +117,26 @@ async function findUserByEmail(email) {
   return null;
 }
 
-/** POST /api/auth/otp/verify  { email, otp } */
-router.post('/otp/verify', (req, res) => {
-  const { email, otp } = req.body || {};
-  if (!isEmail(email) || !otp) {
-    return res.status(400).json({ success: false, error: 'Email and code are required.' });
-  }
+/**
+ * POST /api/auth/otp/verify  { email, otp }
+ * Checks a code without using it up, so /register can still accept it.
+ * Each check counts towards the 5-attempt limit.
+ */
+router.post('/otp/verify', async (req, res, next) => {
+  try {
+    const { email, otp } = req.body || {};
+    if (!isEmail(email) || !otp) {
+      return res.status(400).json({ success: false, error: 'Email and code are required.' });
+    }
 
-  const result = verifyOtp(email, otp);
-  if (!result.ok) {
-    return res.status(400).json({ success: false, error: result.error });
+    const result = await verifyOtp(email, otp, { consume: false });
+    if (!result.ok) {
+      return res.status(400).json({ success: false, error: result.error });
+    }
+    return res.json({ success: true, verified: true });
+  } catch (err) {
+    return next(err);
   }
-  return res.json({ success: true, verified: true });
 });
 
 export default router;

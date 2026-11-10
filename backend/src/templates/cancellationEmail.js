@@ -23,7 +23,8 @@ const row = (label, value) => `
 
 /**
  * Sent when a paid booking is cancelled.
- * @param {{ refCode, guestName, movieTitle, date, time, seats: string[], totalAmount, refundAmount, refundPercent, refundDone }} b
+ * @param {{ refCode, guestName, movieTitle, date, time, seats: string[], totalAmount, refundAmount,
+ *           refundPercent, refundDone, byStaff?: boolean, reason?: string }} b
  */
 export function cancellationEmail(b) {
   const name = escapeHtml(b.guestName || 'Valued Patron');
@@ -34,7 +35,18 @@ export function cancellationEmail(b) {
       ? b.refundDone
         ? `We have refunded <strong style="color:${C.goldSoft};">${rs(b.refundAmount)}</strong> to your original payment method.`
         : `We will refund <strong style="color:${C.goldSoft};">${rs(b.refundAmount)}</strong> to your original payment method. Refunds usually reach your account within 5 to 10 working days.`
-      : 'This cancellation was made inside the no-refund window, so no refund is due.';
+      : b.byStaff
+        ? 'No refund is due for this booking.'
+        : 'This cancellation was made inside the no-refund window, so no refund is due.';
+  const opening = b.byStaff
+    ? `Dear ${name}, our team has cancelled your booking and released your seats.`
+    : `Dear ${name}, your booking has been cancelled and your seats have been released.`;
+  const reasonLine = b.byStaff && b.reason
+    ? `<p style="font-family:${SANS};font-size:13px;line-height:1.6;color:${C.muted};margin:0 0 18px;padding:12px 14px;border-left:2px solid ${C.goldDim};">Reason: ${escapeHtml(b.reason)}</p>`
+    : '';
+  const footer = b.byStaff
+    ? 'Questions about this cancellation? Reply to this email and quote your reference.'
+    : 'If you did not cancel this booking, reply to this email straight away and quote your reference.';
 
   return {
     subject: `Booking cancelled: ${b.movieTitle || 'CINEVERSE'} · ${b.refCode}`,
@@ -57,8 +69,9 @@ export function cancellationEmail(b) {
             <div style="font-family:${SANS};font-size:10px;font-weight:bold;letter-spacing:3px;color:${C.gold};">BOOKING CANCELLED</div>
             <div style="font-family:${SERIF};font-size:24px;line-height:1.3;color:${C.ivory};padding:10px 0 14px;">${title}</div>
             <p style="font-family:${SANS};font-size:14px;line-height:1.7;color:${C.ivory};margin:0 0 18px;">
-              Dear ${name}, your booking has been cancelled and your seats have been released. ${refundLine}
+              ${opening} ${refundLine}
             </p>
+            ${reasonLine}
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               ${row('Reference', ref)}
               ${row('Screening', `${escapeHtml(b.date)} · ${escapeHtml(b.time)}`)}
@@ -67,7 +80,7 @@ export function cancellationEmail(b) {
               ${row(`Refund (${Number(b.refundPercent)}%)`, `<span style="color:${C.goldSoft};">${rs(b.refundAmount)}</span>`)}
             </table>
             <p style="font-family:${SANS};font-size:12px;line-height:1.6;color:${C.muted};margin:18px 0 0;">
-              If you did not cancel this booking, reply to this email straight away and quote your reference.
+              ${footer}
             </p>
           </td>
         </tr>

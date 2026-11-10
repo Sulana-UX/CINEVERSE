@@ -52,7 +52,7 @@ export function createApp() {
   app.use((err, _req, res, _next) => {
     console.error('[api] unhandled error:', err.message);
     // Table / function missing: the SQL migrations have not been run yet.
-    if (['PGRST202', 'PGRST205', '42P01', '42883'].includes(err.code)) {
+    if (['PGRST202', 'PGRST204', 'PGRST205', '42P01', '42703', '42883'].includes(err.code)) {
       return res.status(503).json({
         error: 'The database is not fully set up. Run the SQL files in backend/supabase/migrations in Supabase (see README).',
       });

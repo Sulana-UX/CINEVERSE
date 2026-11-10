@@ -4,9 +4,10 @@ export class QuoteError extends Error {}
 
 /**
  * Validate the requested seats / extras and price them from the server catalogue.
- * @param {{ seats: string[], addons?: Array<{id: string, quantity: number}> }} input
+ * @param {{ seats: string[], addons?: Array<{id: string, quantity: number}>, hall?: string }} input
+ *   hall: auditorium number ("02"); seats are checked against that hall's plan.
  */
-export function buildQuote({ seats, addons = [] }) {
+export function buildQuote({ seats, addons = [], hall }) {
   if (!Array.isArray(seats) || seats.length === 0) {
     throw new QuoteError('Please choose at least one seat.');
   }
@@ -17,7 +18,7 @@ export function buildQuote({ seats, addons = [] }) {
   }
 
   const seatDetails = uniqueSeats.map((id) => {
-    const seat = getSeat(id);
+    const seat = getSeat(id, hall);
     if (!seat) throw new QuoteError(`Seat ${id} does not exist.`);
     const tier = SEAT_TIERS[seat.tier];
     return { id: seat.id, tier: seat.tier, tierName: tier.name, price: tier.price };

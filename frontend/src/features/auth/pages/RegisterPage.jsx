@@ -205,7 +205,7 @@ export default function RegisterPage() {
       visualProps={{
         imageSrc: '/images/luxury_cinema_details.jpg',
         imageAlt: 'Crimson Velvet Seating with Brushed Champagne Gold Architectural Trims',
-        badgeText: 'CONCIERGE TIER â€¢ PRIVATE LOGE SUITE',
+        badgeText: 'CONCIERGE TIER • PRIVATE LOGE SUITE',
         eyebrow: 'PRIVATE SANCTUARY',
         heading: 'Crafted for the True Connoisseur.',
         supportingText:

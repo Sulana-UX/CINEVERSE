@@ -89,7 +89,7 @@ export default function LoginPage() {
       visualProps={{
         imageSrc: '/images/luxury_cinema_interior.jpg',
         imageAlt: 'CINEVERSE Grand Auditorium with Crimson Velvet Recliners and Golden Lighting',
-        badgeText: 'AUDITORIUM NO. 01 â€¢ PRIVATE SCREENING SUITE',
+        badgeText: 'AUDITORIUM NO. 01 • PRIVATE SCREENING SUITE',
         eyebrow: 'THE ART OF CINEMA',
         heading: 'Where Every Frame Feels Extraordinary.',
         supportingText:
@@ -108,7 +108,7 @@ export default function LoginPage() {
             color: '#F3E5AB',
           }}
         >
-          <span className="auth-alert-icon" style={{ color: '#D4AF37' }}>âœ¦</span>
+          <span className="auth-alert-icon" style={{ color: '#D4AF37' }}>✦</span>
           <span>
             {location.state?.message || 'Admin privileges required. Sign in with administrator credentials.'}
           </span>
@@ -164,7 +164,7 @@ export default function LoginPage() {
             name="password"
             value={formData.password}
             onChange={handleChange}
-            placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+            placeholder="••••••••"
             required
             error={fieldErrors.password}
             autoComplete="current-password"

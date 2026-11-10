@@ -50,6 +50,22 @@ describe('verification codes (memory store)', () => {
   });
 });
 
+describe('password reset', () => {
+  it('reset keys can never be reached through the sign-up routes', () => {
+    // Reset codes are stored as "password-reset <email>"; isEmail() rejects the space.
+    assert.equal(isEmail('password-reset guest@example.com'), false);
+  });
+
+  it('reset email says what it is for', async () => {
+    const { otpEmail } = await import('../src/templates/otpEmail.js');
+    const reset = otpEmail({ fullName: '<b>Ann</b>', otp: '123456', purpose: 'reset' });
+    assert.match(reset.subject, /password reset code: 123456/);
+    assert.match(reset.html, /Reset Your Password/);
+    assert.ok(!reset.html.includes('<b>Ann</b>'));
+    assert.match(otpEmail({ otp: '654321' }).subject, /Access Key: 654321/);
+  });
+});
+
 describe('emails', () => {
   it('escapes guest-supplied text', () => {
     assert.equal(escapeHtml('<b>"x"</b>'), '&lt;b&gt;&quot;x&quot;&lt;/b&gt;');

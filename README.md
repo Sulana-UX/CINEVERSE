@@ -25,6 +25,7 @@
 - A booking is confirmed only after payment succeeds. Seats are held for 10 minutes while you pay.
 - E-ticket email styled like a boarding pass, with a QR code for entry.
 - Sign-up with a 6-digit email verification code.
+- Forgot password: a 6-digit code by email, then a new password, then you are signed in.
 - Each hall has its own seat plan (100, 44 and 76 seats).
 - *My Bookings* page: see upcoming, past and cancelled tickets, and cancel with a refund based on how early you cancel.
 
@@ -247,6 +248,8 @@ Prices, the seat layout, extras, the 8-seat limit, the 10-minute hold and the ca
 | GET | `/api/health` | | Status and which services are configured |
 | POST | `/api/auth/otp/send` | `{ email, fullName }` | Email a 6-digit code (10 min, 5 attempts, 30 s resend wait) |
 | POST | `/api/auth/otp/verify` | `{ email, otp }` | Check a code |
+| POST | `/api/auth/password/forgot` | `{ email }` | Email a password reset code (same reply whether or not the account exists) |
+| POST | `/api/auth/password/reset` | `{ email, otp, password }` | Check the reset code and set the new password |
 | POST | `/api/auth/register` | `{ email, password, fullName, otp }` | Check the code and create a verified account |
 | GET | `/api/booking/config` | | Seat layout, prices, extras and rules |
 | GET | `/api/booking/availability` | `?movieId&date&time` | Taken seats for one show |
@@ -287,8 +290,21 @@ GitHub Actions (`.github/workflows/ci.yml`) runs the tests, lint and a productio
 
 ## Deploying
 
-- **Frontend:** build with `VITE_API_URL=https://your-api.example.com npm run build` and host `frontend/dist` on any static host, such as Vercel, Netlify or Cloudflare Pages.
-- **Backend:** run `npm start` inside `backend/` on a Node host, such as Render or Railway. Set `NODE_ENV=production`, set `CORS_ORIGINS` to the frontend's address, and use `PAYMENT_PROVIDER=payhere`.
+Both apps deploy to [Vercel](https://vercel.com) as **two projects from the same repository**.
+
+| Vercel project | Root Directory | Notes |
+| --- | --- | --- |
+| API | `backend` | `backend/vercel.json` runs the Express app as one serverless function (`backend/api/index.js`). |
+| Website | `frontend` | Vite preset. `frontend/vercel.json` sends every page to `index.html`, so links like `/booking` work on refresh. |
+
+1. Deploy the **API** first. Add every variable from `backend/.env.example` in **Settings > Environment Variables**. Set `CORS_ORIGINS` and `FRONTEND_URL` to the website address, and `PUBLIC_API_URL` to the API address.
+2. Deploy the **website** with `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_CLOUDINARY_CLOUD_NAME` and `VITE_API_URL` (the API address, no trailing slash).
+3. In Supabase, open **Authentication > URL Configuration** and set **Site URL** to the website address, and add `https://<website>/**` to **Redirect URLs**.
+4. Open `https://<api>/api/health` to check that the database, email and payments are configured.
+
+Vercel runs with `NODE_ENV=production`, where the demo checkout is turned off. Use `PAYMENT_PROVIDER=payhere`, or set `ALLOW_DEMO_PAYMENTS=true` for a showcase site where no real money is taken.
+
+The API can also run on any Node host (Render, Railway, a VPS) with `npm start` inside `backend/`.
 
 ---
 

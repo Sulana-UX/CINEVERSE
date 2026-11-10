@@ -98,20 +98,30 @@ export const authService = {
   },
 
   /**
-   * Send password reset instructions to an email.
-   * @param {{ email: string }} payload
+   * Forgot password, step 1: the backend emails a 6-digit reset code.
+   * @param {string} email
+   * @returns {Promise<{ message?: string, error: string|null }>}
+   */
+  async requestPasswordReset(email) {
+    try {
+      const res = await apiPost('/api/auth/password/forgot', { email: (email || '').trim().toLowerCase() });
+      return { message: res.message, error: null };
+    } catch (err) {
+      return { error: err.message || 'Could not send the reset code. Please try again.' };
+    }
+  },
+
+  /**
+   * Forgot password, step 2: check the code and set the new password.
+   * @param {{ email: string, otp: string, password: string }} payload
    * @returns {Promise<{ error: string|null }>}
    */
-  async resetPassword({ email }) {
-    if (!isSupabaseConfigured) return { error: NOT_CONFIGURED };
-
+  async confirmPasswordReset({ email, otp, password }) {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/login`,
-      });
-      return { error: error ? error.message : null };
+      await apiPost('/api/auth/password/reset', { email: (email || '').trim().toLowerCase(), otp, password });
+      return { error: null };
     } catch (err) {
-      return { error: err.message || 'An unexpected error occurred while resetting password.' };
+      return { error: err.message || 'Could not change the password. Please try again.' };
     }
   },
 

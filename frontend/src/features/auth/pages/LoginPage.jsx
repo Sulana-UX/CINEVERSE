@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { KeyRound, CheckCircle2, X } from 'lucide-react';
 import AuthLayout from '../components/AuthLayout';
 import AuthForm from '../components/AuthForm';
+import ForgotPasswordDialog from '../components/ForgotPasswordDialog';
 import PasswordInput from '../components/PasswordInput';
 import { destinationFor } from '../utils/adminAuth';
 import { useAuth } from '../hooks/useAuth';
@@ -12,7 +11,7 @@ import { validateLoginForm } from '../validation/authValidation';
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, resetPassword, loading, error: authError, clearError } = useAuth();
+  const { login, loading, error: authError, clearError } = useAuth();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -22,11 +21,7 @@ export default function LoginPage() {
 
   const [fieldErrors, setFieldErrors] = useState({});
 
-  // Forgot password modal state
-  const [showForgotModal, setShowForgotModal] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotLoading, setForgotLoading] = useState(false);
-  const [forgotStatus, setForgotStatus] = useState(null); // { type: 'success' | 'error', message: string }
+  const [showForgot, setShowForgot] = useState(false);
 
   // Signed-in visitors never see this page: GuestRoute sends them on.
 
@@ -75,37 +70,14 @@ export default function LoginPage() {
     }
   };
 
-  const handleOpenForgotModal = () => {
-    setForgotEmail(formData.email || '');
-    setForgotStatus(null);
-    setShowForgotModal(true);
-  };
-
-  const handleForgotSubmit = async (e) => {
-    e.preventDefault();
-    if (!forgotEmail || !forgotEmail.includes('@')) {
-      setForgotStatus({
-        type: 'error',
-        message: 'Please enter a valid member email address.',
-      });
-      return;
-    }
-
-    setForgotLoading(true);
-    setForgotStatus(null);
-    const result = await resetPassword({ email: forgotEmail });
-    setForgotLoading(false);
-
+  // After a password reset, sign straight in with the new password.
+  const handlePasswordReset = async (email, password) => {
+    const result = await login({ email, password });
+    setShowForgot(false);
     if (result.success) {
-      setForgotStatus({
-        type: 'success',
-        message: 'A private reset dispatch has been delivered to your email inbox.',
-      });
+      navigate(destinationFor(result.user, location.state?.from), { replace: true });
     } else {
-      setForgotStatus({
-        type: 'error',
-        message: result.error || 'Unable to dispatch reset email. Please verify and try again.',
-      });
+      setFormData((prev) => ({ ...prev, email, password: '' }));
     }
   };
 
@@ -181,7 +153,7 @@ export default function LoginPage() {
             <button
               type="button"
               className="auth-forgot-link"
-              onClick={handleOpenForgotModal}
+              onClick={() => setShowForgot(true)}
               id="forgot-password-link"
             >
               Forgot Password?
@@ -223,88 +195,13 @@ export default function LoginPage() {
         </Link>
       </div>
 
-      {/* Forgot Password Luxury Modal */}
-      {showForgotModal &&
-        typeof document !== 'undefined' &&
-        createPortal(
-          <div
-            className="auth-modal-backdrop"
-            role="dialog"
-            aria-modal="true"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setShowForgotModal(false);
-            }}
-          >
-            <div className="auth-modal-card">
-              <button
-                type="button"
-                className="auth-modal-close"
-                onClick={() => setShowForgotModal(false)}
-                aria-label="Close dialog"
-              >
-                <X size={18} />
-              </button>
-
-              <div className="auth-modal-header">
-                <div className="auth-modal-icon-badge">
-                  <KeyRound size={20} className="auth-modal-icon" />
-                </div>
-                <h3 className="auth-modal-title">Reset Your Access Key</h3>
-                <p className="auth-modal-subtitle">
-                  Enter your registered member email address to receive secure reset credentials.
-                </p>
-              </div>
-
-              {forgotStatus ? (
-                <div className={`auth-modal-status ${forgotStatus.type}`}>
-                  {forgotStatus.type === 'success' && (
-                    <CheckCircle2 size={18} className="auth-modal-status-icon" />
-                  )}
-                  <span>{forgotStatus.message}</span>
-                  {forgotStatus.type === 'success' && (
-                    <button
-                      type="button"
-                      className="auth-modal-action-btn"
-                      onClick={() => setShowForgotModal(false)}
-                      style={{ marginTop: '1.25rem' }}
-                    >
-                      RETURN TO SIGN IN
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <form onSubmit={handleForgotSubmit} className="auth-modal-form">
-                  <div className="auth-field-group">
-                    <label htmlFor="forgot-email" className="auth-label">
-                      Member Email Address
-                    </label>
-                    <input
-                      type="email"
-                      id="forgot-email"
-                      value={forgotEmail}
-                      onChange={(e) => setForgotEmail(e.target.value)}
-                      placeholder="patron@cineverse.com"
-                      required
-                      className="auth-input"
-                      autoFocus
-                    />
-                  </div>
-
-                  <div className="auth-modal-actions">
-                    <button
-                      type="submit"
-                      className="auth-submit-btn"
-                      disabled={forgotLoading}
-                    >
-                      {forgotLoading ? 'DISPATCHING...' : 'DISPATCH INSTRUCTIONS'}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-          </div>,
-          document.body
-        )}
+      {showForgot && (
+        <ForgotPasswordDialog
+          initialEmail={formData.email}
+          onClose={() => setShowForgot(false)}
+          onReset={handlePasswordReset}
+        />
+      )}
     </AuthLayout>
   );
 }

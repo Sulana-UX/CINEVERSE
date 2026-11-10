@@ -128,8 +128,9 @@ export default function AdminAuditoriumsTab({
             ((hall.occupiedSeats || 0) / (hall.totalSeats || 1)) * 100
           );
           const status = STATUS_META[hall.status] || STATUS_META.Standby;
-          const isLive = hall.status === 'Live Screening';
-          const progress = hall.screeningProgress || 65;
+          // Progress comes from today's schedule: a film is playing only between its start and end time.
+          const progress = Math.max(0, Math.min(100, hall.screeningProgress || 0));
+          const isLive = progress > 0 && progress < 100;
 
           return (
             <article key={hall.id} className={`aud-card tone-${status.tone}`}>
@@ -166,7 +167,7 @@ export default function AdminAuditoriumsTab({
                   />
                 </div>
                 <div className="aud-now-foot">
-                  <span>{isLive ? 'Playback' : 'Not playing'}</span>
+                  <span>{isLive ? 'Playing now' : 'Not playing'}</span>
                   <span>{isLive ? `${progress}%` : '—'}</span>
                 </div>
               </div>

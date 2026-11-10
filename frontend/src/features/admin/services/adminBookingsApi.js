@@ -18,7 +18,8 @@ function toAdminBooking(b) {
     date: { full: formatShowDate(b.showDate) },
     seats: b.seats,
     seatsDisplay: b.seats,
-    tier: b.seatDetails?.[0]?.tierName || '',
+    // Every tier in the booking, e.g. "Orchestra Suite · Royal Sovereign Loge".
+    tier: [...new Set((b.seatDetails || []).map((s) => s.tierName).filter(Boolean))].join(' · '),
     totalAmount: b.totalAmount,
     currency: b.currency,
     addons: (b.addons || []).map((a) => ({ name: a.name, quantity: a.quantity })),

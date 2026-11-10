@@ -3,12 +3,16 @@ import { buildPayHereCheckout, isPayHereConfigured } from './payhere.js';
 /**
  * Which payment provider is active.
  *  - "payhere": real PayHere checkout (needs PAYHERE_* and PUBLIC_API_URL).
- *  - "demo":    a local test checkout for development. Refused in production.
+ *  - "demo":    a test checkout where no money moves. Refused in production
+ *               unless ALLOW_DEMO_PAYMENTS=true (for a public showcase site).
  */
 export function activeProvider() {
   const wanted = (process.env.PAYMENT_PROVIDER || 'demo').toLowerCase();
   if (wanted === 'payhere') return isPayHereConfigured() ? 'payhere' : null;
-  if (wanted === 'demo') return process.env.NODE_ENV === 'production' ? null : 'demo';
+  if (wanted === 'demo') {
+    const allowed = process.env.NODE_ENV !== 'production' || process.env.ALLOW_DEMO_PAYMENTS === 'true';
+    return allowed ? 'demo' : null;
+  }
   return null;
 }
 

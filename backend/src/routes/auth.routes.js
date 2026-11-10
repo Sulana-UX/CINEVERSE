@@ -117,6 +117,92 @@ async function findUserByEmail(email) {
   return null;
 }
 
+// Reset codes live next to sign-up codes, under their own key, so a sign-up
+// code can never be used to change a password (and the reverse). The space
+// makes the key impossible to reach through the sign-up routes, because
+// isEmail() rejects whitespace.
+const resetKey = (email) => `password-reset ${String(email).trim().toLowerCase()}`;
+const RESET_SENT = 'If an account exists for this email, a 6-digit reset code is on its way.';
+
+/**
+ * POST /api/auth/password/forgot  { email }
+ * Emails a 6-digit reset code. The reply is the same whether or not the
+ * account exists, so this cannot be used to find out who has an account.
+ */
+router.post('/password/forgot', async (req, res, next) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(503).json({ success: false, error: 'Password reset is temporarily unavailable.' });
+    }
+    const { email } = req.body || {};
+    if (!isEmail(email)) {
+      return res.status(400).json({ success: false, error: 'A valid email address is required.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const issued = await issueOtp(resetKey(cleanEmail));
+    if (!issued.ok) {
+      return res.status(429).json({
+        success: false,
+        error: `Please wait ${issued.retryAfterSec}s before requesting another code.`,
+      });
+    }
+
+    const user = await findUserByEmail(cleanEmail);
+    if (!user) {
+      await discardOtp(resetKey(cleanEmail));
+      return res.json({ success: true, message: RESET_SENT });
+    }
+
+    const { subject, html } = otpEmail({ fullName: user.user_metadata?.full_name, otp: issued.otp, purpose: 'reset' });
+    const result = await sendMail({ to: cleanEmail, subject, html });
+    if (!result.sent) {
+      await discardOtp(resetKey(cleanEmail));
+      return res.status(502).json({ success: false, error: `Unable to send the reset email (${result.error}).` });
+    }
+    return res.json({ success: true, message: RESET_SENT });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /api/auth/password/reset  { email, otp, password }
+ * Checks the emailed code and sets the new password.
+ */
+router.post('/password/reset', async (req, res, next) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(503).json({ success: false, error: 'Password reset is temporarily unavailable.' });
+    }
+    const { email, otp, password } = req.body || {};
+    if (!isEmail(email)) {
+      return res.status(400).json({ success: false, error: 'A valid email address is required.' });
+    }
+    const weak = passwordProblem(password);
+    if (weak) {
+      return res.status(400).json({ success: false, error: weak });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const check = await verifyOtp(resetKey(cleanEmail), otp || '');
+    if (!check.ok) {
+      return res.status(400).json({ success: false, error: check.error });
+    }
+
+    const user = await findUserByEmail(cleanEmail);
+    if (!user) {
+      return res.status(400).json({ success: false, error: 'Verification code not found or expired. Please request a new code.' });
+    }
+    // The code proves the guest owns this inbox, so the email counts as verified too.
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, { password, email_confirm: true });
+    if (error) throw error;
+    return res.json({ success: true });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 /**
  * POST /api/auth/otp/verify  { email, otp }
  * Checks a code without using it up, so /register can still accept it.

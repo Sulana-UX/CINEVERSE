@@ -98,25 +98,6 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const resetPassword = useCallback(async ({ email }) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await authService.resetPassword({ email });
-      if (result.error) {
-        setError(result.error);
-        return { success: false, error: result.error };
-      }
-      return { success: true };
-    } catch (err) {
-      const message = err.message || 'Password reset failed.';
-      setError(message);
-      return { success: false, error: message };
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   const logout = useCallback(async () => {
     setLoading(true);
     try {
@@ -138,7 +119,6 @@ export function AuthProvider({ children }) {
     error,
     login,
     register,
-    resetPassword,
     logout,
     clearError,
     isAuthenticated: Boolean(user),

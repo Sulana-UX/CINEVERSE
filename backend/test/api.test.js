@@ -55,6 +55,9 @@ describe('API', () => {
     const weak = await post('/api/auth/register', { email: 'a@b.co', password: 'short', fullName: 'A', otp: '123456' });
     assert.ok([400, 503].includes(weak.status));
     assert.ok([400, 503].includes((await fetch(`${base}/api/booking/availability?movieId=x`)).status));
+    // Password reset needs the database; without it the routes say so instead of crashing.
+    assert.equal((await post('/api/auth/password/forgot', { email: 'a@b.co' })).status, 503);
+    assert.equal((await post('/api/auth/password/reset', { email: 'a@b.co', otp: '123456', password: 'Cinema2026' })).status, 503);
   });
 
   it('rejects malformed JSON and unknown routes cleanly', async () => {

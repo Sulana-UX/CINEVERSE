@@ -10,6 +10,12 @@ ScrollTrigger.config({ ignoreMobileResize: true });
 
 const VIDEO_URL = '/videos/cinema-intro.mp4';
 
+// Phones and tablets: scrubbing the video frame by frame while scrolling is too
+// heavy for their decoders and made the page lag. They get the same video
+// playing on its own in a loop instead, with normal scrolling.
+const LITE_QUERY = '(max-width: 900px), (hover: none) and (pointer: coarse)';
+const isLiteDevice = () => typeof window !== 'undefined' && Boolean(window.matchMedia?.(LITE_QUERY).matches);
+
 /**
  * Scroll scrubbing seeks all over the video. Over the internet every seek into
  * a part that has not downloaded yet stalls, so the whole file is downloaded
@@ -20,6 +26,7 @@ function useFullyLoadedVideo(url) {
   const [state, setState] = useState({ src: null, progress: 0 });
 
   useEffect(() => {
+    if (!url) return undefined; // not needed (phones stream the video instead)
     const controller = new AbortController();
     let objectUrl = null;
 
@@ -55,7 +62,9 @@ function useFullyLoadedVideo(url) {
 }
 
 export default function CinematicIntro() {
-  const { src: videoSrc, progress: downloadProgress } = useFullyLoadedVideo(VIDEO_URL);
+  const [lite] = useState(isLiteDevice);
+  const { src: fullVideoSrc, progress: downloadProgress } = useFullyLoadedVideo(lite ? null : VIDEO_URL);
+  const videoSrc = lite ? VIDEO_URL : fullVideoSrc;
   const containerRef = useRef(null);
   const heroRef = useRef(null);
   const videoRef = useRef(null);
@@ -112,7 +121,7 @@ export default function CinematicIntro() {
   //    video has downloaded. Adding it later made the page jump on slow
   //    connections while people were already scrolling.
   useEffect(() => {
-    if (hasError || prefersReducedMotion) return undefined;
+    if (hasError || prefersReducedMotion || lite) return undefined;
 
     const container = containerRef.current;
     const hero = heroRef.current;
@@ -157,11 +166,11 @@ export default function CinematicIntro() {
     ScrollTrigger.refresh();
 
     return () => ctx.revert();
-  }, [hasError, prefersReducedMotion]);
+  }, [hasError, prefersReducedMotion, lite]);
 
   // 2. Once the video is in memory, follow the scroll position with it.
   useEffect(() => {
-    if (!isVideoLoaded || hasError || prefersReducedMotion) return undefined;
+    if (!isVideoLoaded || hasError || prefersReducedMotion || lite) return undefined;
 
     const video = videoRef.current;
     if (!video) return undefined;
@@ -208,7 +217,7 @@ export default function CinematicIntro() {
       clearTimeout(seekUnlockTimer);
       video.removeEventListener('seeked', handleSeeked);
     };
-  }, [isVideoLoaded, hasError, prefersReducedMotion]);
+  }, [isVideoLoaded, hasError, prefersReducedMotion, lite]);
 
   const toggleReducedMotionPlay = () => {
     const video = videoRef.current;
@@ -249,6 +258,8 @@ export default function CinematicIntro() {
               src={videoSrc || undefined}
               playsInline
               muted
+              autoPlay={lite && !prefersReducedMotion}
+              loop={lite}
               preload="auto"
               onLoadedMetadata={handleLoadedMetadata}
               onError={handleError}
